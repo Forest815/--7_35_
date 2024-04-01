@@ -10,6 +10,11 @@
   </head>
   <body> <!-- ここから本文開始 -->
     <h1>Kazushi's portfolio</h1>
+    <div class="menu-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
     <style>
     body {
       color: lemonchiffon; /* テキストの色を指定 */
@@ -42,6 +47,26 @@
     a:visited {
       color: orchid; /* 訪問済みのリンクの色 */
     }
+    .menu-icon {
+      display: block;
+      width: 30px; /* アイコンの幅 */
+      height: 25px; /* アイコン全体の高さ */
+      margin: 10px; /* 余白 */
+      cursor: pointer; /* カーソルをポインターに */
+    }
+
+    .menu-icon span {
+      display: block;
+      height: 3px; /* 各線の高さ */
+      background-color: lemonchiffon; /* 線の色 */
+      margin-bottom: 5px; /* 線間の余白 */
+      transition: background-color 0.3s; /* 色の変化を滑らかに */
+    }
+
+  .menu-icon span:last-child {
+    margin-bottom: 0; /* 最後の線の下の余白をなくす */
+  }
+      
     
     </style>
     
