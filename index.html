@@ -16,6 +16,7 @@
       background-color: dimgray;
     }
     h1 {
+      clear: both;
       background-color: black; /* 背景色を指定 */
       text-align: center; /* テキストを中央揃えにする */
     }
@@ -45,15 +46,16 @@
       
     .menu-icon {
       cursor: pointer;
-      display: inline-block;
-      margin: 10px;
+      display: inline-block; /* インラインブロック要素として表示 */
+      float: left; /* 左側に浮かせる */
+      margin: 10px 20px; /* 余白を設定 */
     }
 
     .menu-icon span {
       display: block;
       width: 25px;
       height: 3px;
-      margin: 5px auto;
+      margin-bottom: 5px;
       background-color: lemonchiffon;
       transition: all 0.3s ease;
     }
@@ -107,14 +109,14 @@
       </ul>
     </nav>
     
-    <h2>Profile</h2>
+    <h2 id="profile">Profile</h2>
     
     <p>
       大阪公立大学工業専門高等学校、知能情報コース所属の高専2年生。<br />
       クラブはプログラミング研究会に所属。<br />
     </p>
 
-    <h2>Skills</h2>
+    <h2　id="skills">Skills</h2>
     <h3>プログラム言語</h3>
     <ul>
       <li>C++ ...プログラミング研究会で習い、パソコン甲子園などで使用した
@@ -134,7 +136,7 @@
       <li>Tinkercad ...総合工学システム実習の時に使い、製図をした
     </ul>
     
-    <h2>作品</h2>
+    <h2 id="works">作品</h2>
     <ul>
       <li><a href=https://github.com/Forest815/--7_35_/blob/main/%E8%AA%B2%E9%A1%8C05_35_MK.ipynb>後3赤単我我我一人回し(プログラミング1課題5)</a>　...pythonで約10時間で作ったゲーム
     </ul>
