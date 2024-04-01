@@ -15,6 +15,13 @@
       <span></span>
       <span></span>
     </div>
+    <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="#profile">Profile</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#works">作品</a></li>
+      </ul>
+    </nav>
     <style>
     body {
       color: lemonchiffon; /* テキストの色を指定 */
@@ -47,25 +54,38 @@
     a:visited {
       color: orchid; /* 訪問済みのリンクの色 */
     }
-    .menu-icon {
-      display: block;
-      width: 30px; /* アイコンの幅 */
-      height: 25px; /* アイコン全体の高さ */
-      margin: 10px; /* 余白 */
-      cursor: pointer; /* カーソルをポインターに */
+      
+    .navigation {
+      display: none; /* 最初は隠す */
+      position: fixed; /* 画面に固定 */
+      top: 0;
+      right: 0;
+      background-color: dimgray; /* 背景色 */
+      width: 200px; /* メニューの幅 */
+      height: 100%; /* 画面の高さに合わせる */
+      z-index: 100; /* 他の要素の上に配置 */
     }
 
-    .menu-icon span {
-      display: block;
-      height: 3px; /* 各線の高さ */
-      background-color: lemonchiffon; /* 線の色 */
-      margin-bottom: 5px; /* 線間の余白 */
-      transition: background-color 0.3s; /* 色の変化を滑らかに */
+    .navigation ul {
+      list-style-type: none; /* リストのスタイルをなくす */
+      padding: 0;
+      margin: 0;
     }
 
-  .menu-icon span:last-child {
-    margin-bottom: 0; /* 最後の線の下の余白をなくす */
-  }
+    .navigation li {
+      border-bottom: 1px solid lemonchiffon; /* 区切り線 */
+    }
+    
+    .navigation a {
+      display: block;
+      padding: 15px; /* パディングで余白を取る */
+      color: lemonchiffon; /* リンクの色 */
+      text-decoration: none; /* 下線を消す */
+    }
+    
+    .navigation a:hover {
+      background-color: black; /* ホバー時の背景色 */
+    }
       
     
     </style>
@@ -156,6 +176,22 @@
       <img src="未入力.png" width="320" height="240" alt="未入力" /><br />
       
     </p>
-      
+      <script>
+        function toggleMenu() {
+          var navigation = document.getElementById("navigation");
+          if (navigation.style.display === "block") {
+            navigation.style.display = "none";
+          } else {
+            navigation.style.display = "block";
+          }
+        }
+      <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="#profile" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="#skills" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="#works" onclick="toggleMenu()">作品</a></li>
+      </ul>
+    </nav>
+</script>
   </body> <!-- ここまで本文終了 -->
 </html>
