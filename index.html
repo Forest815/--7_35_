@@ -3,97 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <title>Kazushi's portfolio</title>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=yes"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body> <!-- ここから本文開始 -->
     <h1>Kazushi's portfolio</h1>
-    <style>
-    body {
-      color: lemonchiffon; /* テキストの色を指定 */
-      background-color: dimgray;
-    }
-    h1 {
-      clear: both;
-      background-color: black; /* 背景色を指定 */
-      text-align: center; /* テキストを中央揃えにする */
-    }
-    h2 {
-      background-color: black; /* 背景色を指定 */
-      text-align: center; /* テキストを中央揃えにする */
-    }
-    h3 {
-      background-color: black; /* 背景色を指定 */
-      text-align: center; /* テキストを中央揃えにする */
-    }
-      /* 通常のリンクの色を設定 */
-    a {
-      color: skyblue; /* リンクの色 */
-      text-decoration: none; /* 下線を消す */
-    }
 
-    /* マウスオーバー時のリンクの色を設定 */
-    a:hover {
-      color: mediumseagreen; /* マウスオーバー時の色 */
-    }
-
-    /* 訪問済みリンクの色を設定 */
-    a:visited {
-      color: orchid; /* 訪問済みのリンクの色 */
-    }
-      
-    .menu-icon {
-      cursor: pointer;
-      display: inline-block; /* インラインブロック要素として表示 */
-      float: left; /* 左側に浮かせる */
-      margin: 10px 20px; /* 余白を設定 */
-    }
-
-    .menu-icon span {
-      display: block;
-      width: 25px;
-      height: 3px;
-      margin-bottom: 5px;
-      background-color: lemonchiffon;
-      transition: all 0.3s ease;
-    }
-    
-    .navigation {
-      display: none; /* 最初は隠す */
-      position: fixed; /* 画面に固定 */
-      top: 0;
-      right: 0;
-      background-color: dimgray; /* 背景色 */
-      width: 200px; /* メニューの幅 */
-      height: 100%; /* 画面の高さに合わせる */
-      z-index: 100; /* 他の要素の上に配置 */
-    }
-    
-    .navigation ul {
-      list-style-type: none; /* リストのスタイルをなくす */
-      padding: 0;
-      margin: 0;
-    }
-    
-    .navigation li {
-      border-bottom: 1px solid lemonchiffon; /* 区切り線 */
-    }
-    
-    .navigation a {
-      display: block;
-      padding: 15px; /* パディングで余白を取る */
-      color: lemonchiffon; /* リンクの色 */
-      text-decoration: none; /* 下線を消す */
-    }
-    
-    .navigation a:hover {
-      background-color: black; /* ホバー時の背景色 */
-    }
-    
-    </style>
-        <!-- ハンバーガーメニューアイコン -->
+    <!-- ハンバーガーメニューアイコン -->
     <div class="menu-icon" onclick="toggleMenu()">
       <span></span>
       <span></span>
