@@ -1,0 +1,69 @@
+body {
+  color: lemonchiffon;
+  background-color: dimgray;
+}
+
+h1, h2, h3 {
+  background-color: black;
+  text-align: center;
+}
+
+a {
+  color: skyblue;
+  text-decoration: none;
+}
+
+a:hover {
+  color: mediumseagreen;
+}
+
+a:visited {
+  color: orchid;
+}
+
+.menu-icon {
+  cursor: pointer;
+  display: inline-block;
+  float: left;
+  margin: 10px 20px;
+}
+
+.menu-icon span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  margin-bottom: 5px;
+  background-color: lemonchiffon;
+  transition: all 0.3s ease;
+}
+
+.navigation {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-color: dimgray;
+  width: 200px;
+  height: 100%;
+  z-index: 100;
+}
+
+.navigation ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.navigation li {
+  border-bottom: 1px solid lemonchiffon;
+}
+
+.navigation a {
+  display: block;
+  padding: 15px;
+  color: lemonchiffon;
+}
+
+.navigation a:hover {
+  background-color: black;
+}
