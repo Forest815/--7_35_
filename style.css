@@ -1,41 +1,43 @@
 
-/* ヘッダー固定＆デザイン調整 */
-.site-header {
+/* 固定ヘッダーのスタイル */
+.fixed-header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: white; /* 必要に応じて背景色変更 */
+  height: 60px; /* お好みで調整 */
+  background-color: white;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  justify-content: space-between;
+  padding: 0 20px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   z-index: 1000;
 }
 
-/* ハンバーガーメニューの見た目 */
+/* ヘッダーの下のコンテンツに余白を追加して隠れないようにする */
+body {
+  color: lemonchiffon;
+  background-color: dimgray;
+  padding-top: 60px; /* .fixed-header の高さと同じに */
+}
+
+/* ハンバーガーアイコン */
 .menu-icon {
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .menu-icon span {
   width: 25px;
   height: 3px;
-  background-color: #333;
-  border-radius: 2px;
+  background-color: black;
+  display: block;
 }
 
-/* 本文の上にヘッダー分の余白を追加 */
-body {
-  color: lemonchiffon;
-  background-color: dimgray;
-  margin: 0;
-  padding-top: 70px; /* ヘッダーの高さに合わせて調整 */
-}
+
 
 h1, h2, h3 {
   background-color: black;
