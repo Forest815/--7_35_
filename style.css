@@ -1,10 +1,25 @@
 
+/* 固定ヘッダーのスタイル */
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px; /* お好みで調整 */
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
 
 /* ヘッダーの下のコンテンツに余白を追加して隠れないようにする */
 body {
   color: lemonchiffon;
   background-color: dimgray;
-  
+  padding-top: 60px; /* .fixed-header の高さと同じに */
 }
 
 /* ハンバーガーアイコン */
