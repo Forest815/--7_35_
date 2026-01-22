@@ -13,387 +13,58 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body> <!-- ここから本文開始 -->
-    <h1>Kazushi's portfolio</h1>
+    <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
     
     <!-- ナビゲーションメニュー -->
     <nav class="navigation" id="navigation">
       <ul>
-        <li><a href="#profile" onclick="toggleMenu()">Profile</a></li>
-        <li><a href="#skills" onclick="toggleMenu()">Skills</a></li>
-        <li><a href="#fes" onclick="toggleMenu()">高専祭</a></li>
-        <li><a href="#works" onclick="toggleMenu()">作品</a></li>
-        <li><a href="#procon" onclick="toggleMenu()">高専プロコン</a></li>
+        <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
+        <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
+        <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
       </ul>
     </nav>
-    
-    <h2 id="profile">Profile</h2>
-    
-    <p>
-      大阪公立大学工業専門高等学校、知能情報コース所属の高専4年生。<br />
-      クラブはプログラミング研究会に所属。4年時副部長、第36回高専プロコン本選出場、結果は敢闘賞となった。<br />
-    </p>
 
-    <h2 id="skills">Skills</h2>
-    
-    <h3>プログラム言語</h3>
-    <ul>
-      <li>C++ ...プログラミング研究会で習い、パソコン甲子園などで使用した
-      <li>Python ...中学生の頃からプログラミング教室で習い、高専の授業でも学習した
-      <li>Arduino ...高専のマイクロコンピュータと工学基礎実習で学習した
-      <li>Scratch ...小中学生の時に自主的に学習し、高専でも少し学んだ
-      <li>C ...高専3年時の授業で学んだ
-      <li>HTML/CSS/JavaScript ...高専の授業や自主学習で学んだ
-      <li>TypeScript ...高専プロコンの学食管理アプリで使用した
-      <li>React ...高専プロコンで使用した
-      <li>Next.js ...高専プロコンで使用した
-      <li>SQL ...高専プロコンで使用した
-    </ul>
+    <section class="top-content">
+      <h2>ようこそ</h2>
+      <p>
+        このポートフォリオサイトは、大阪公立大学工業専門高等学校の高専4年生、Kazushiのプロフィール、スキル、作品を紹介しています。<br />
+        以下から各ページへ移動できます。
+      </p>
+    </section>
 
-    <h3>ソフトウェア</h3>
-    <ul>
-      <li>Ambient ...Iot-DX実験で使用している
-      <li>Git/GitHub ...プログラミング1で履修し、このポートフォリオを作るのに使用した
-      <li>VSCode ...プログラミング1で履修し、pythonやjupyter環境を使用するときによく使う
-      <li>ArduinoIDE ...Arduinoを使用する際に使った
-      <li>Deeds-DCS ...論理回路1の授業で現在進行形で使っている
-      <li>MakeCode for micro:bit ...総合工学システム実習やIot-DX実験の時にmicro:bitを使うために使用した
-      <li>TinkerCad ...総合工学システム実習の時に使い、製図をした
-      <li>Supabase ...高専プロコンで使用した
-      <li>Prisma ...高専プロコンで使用した
-    </ul>
+    <section class="pages-intro">
+      <div class="page-card">
+        <h3>Profile</h3>
+        <p>Kazushiの基本情報、背景、そして所属クラブについて紹介しています。</p>
+        <a href="profile.html" class="btn">詳しく見る →</a>
+      </div>
 
-    <h2 id="fes">高専祭</h2>
-    <h3>高専祭(2年時)</h3>
-    <p>
-      <a href=https://gagaga898989.github.io/ksks6>チキンレース</a> ...2年時の高専祭で6人班で作成したゲーム<br />
-      これらの車や看板、オンオフボタンなどを作成し、主にデザインを担当した。<br />
-      また、タイトル画面をAIを使って作成した。<br />
-    </p>
-    <img src="ゲーム画像.jpg" width="320" height="180" alt="ゲーム画像" />
-    <img src="選択画面.jpg" width="320" height="180" alt="選択画面" />
-    <img src="チキンレース.jpg" width="320" height="180" alt="チキンレース" />
-    </p>
-    <h3>高専祭(3年時)</h3>
-    <p>
-      <a href=https://unityroom.com/games/2024fes>ゾンビFPS</a> ...3年時の高専祭で5人班で作成したゲーム<br />
-      Wiiリモコンを使用した銃の作成を行った。<br />
-    </p>
-    <h2 id="works">作品</h2>
-    <ul>
-      <li><a href=https://github.com/Forest815/--7_35_/blob/main/%E8%AA%B2%E9%A1%8C05_35_MK.ipynb>後3赤単我我我一人回し(プログラミング1課題5)</a>　...pythonで約10時間で作ったゲーム
-    </ul>
-    <p>
-      このゲームはデュエルマスターズというカードゲームの赤単我我我というデッキを使って一人回しで3ターン以内に決着をつけることができるかをPythonを使用して再現したものである。<br />
-    </p>
-    <h2>自作ゲーム</h2>
-    <h3><a href=https://github.com/Forest815/assignment8.git>551の蓬莱ゲーム（GitHub へのURL）</a></h3>
-    <p>
-      このゲームは自キャラクター(通天閣)を操作して落ちてくる豚まんを食べ、<a href=https://ja.wikipedia.org/wiki/%E9%A3%9B%E3%81%B3%E5%87%BA%E3%81%97%E5%9D%8A%E3%82%84>とびたくん</a>やたこ焼きから避けて<br />
-      通天閣を一番上まで飛ばすとクリアというゲームとなっている。<br />
-      このゲームを作った理由は冬休み前に<a href=https://www.tondesaitama.com/>飛んで埼玉～～琵琶湖より愛をこめて</a>を見に行き、<br />
-      関西へのいじりがとても面白くこの映画をネタにしてゲームを作りたいと思ったからだ。<br />
-      製作期間:2023年12月～2024年1月<br />
-      操作方法:Aキーで左に、Dキーで右に通天閣を移動させる。<br />
-      ルール:551 point が0になると強制終了になる。通天閣が画面の一番上まで飛ぶと、ゲームクリアになる。<br />
-      <h4>キャラクター説明</h4>
-    <ul>
-      <li>通天閣 ...操作するキャラクター。回転しながら移動する。
-      <li>豚まん ...通天閣が豚まんに触れ続ける限り551 point が1.5ずつたまり続ける。
-      <li>とびたくん ...敵キャラクター。とびたくんに触れ続ける限りと551 point が1ずつ減り続ける。
-      <li>たこ焼き ...敵キャラクター。一回でも触れると551 point が0になり、ゲームオーバーになる。
-      <li>551の蓬莱 ...落下し終わるまでに一回でも触れたら551 pointが55.1追加される。
-      <li>火 ...通天閣が飛ぶときの演出要員。
-      <li>土 ...背景の地面を作る要員。
-    </ul>
-      <img src="ゲーム画面.png" width="320" height="180" alt="ゲーム画面" /><br />
-      ゲーム画面はこのようになっている<br />
-      <img src="通天閣発車.png" width="320" height="180" alt="通天閣発車" /><br />
-      frame meter が1500を超えると通天閣が飛び始める<br />
-      <img src="ピンチ.png" width="320" height="180" alt="ピンチ" /><br />
-      551 point が100を切り出すとこの文字が赤くなる<br />
-    </p>
-    <h2>自作アプリ</h2>
-    <h3><a href=https://github.com/Forest815/kadai9.git>課題管理アプリ（GitHub へのURL）</a></h3>
-    <p>
-      製作期間:2024年2月<br />
-      製作時間:約6時間<br />
-      このアプリはPySide を使って制作した課題管理アプリである。まず、コンボボックスにある教科を選択し、空欄に文字を入力し、決定ボタンを押すと<br />
-      <img src="入力.png" width="320" height="240" alt="入力" /><br />
-      「微分積分：やり直し」のように教科名とやるべき内容を表示する。そして、課題が終わると横にあるチェックボックスに<br />
-      チェックを入れると課題が終了した判定になる。また、何個も入力すると「完了した課題数: a個中のb個」と表示され、<br />
-      自分が今どのくらい終わらしているのかが分かるようになっている。<br />
-      <img src="動作例.png" width="320" height="240" alt="動作例" /><br />
-      また、何も入力しないまま決定ボタンを押すと「未入力です」と表示される。<br />
-      <img src="未入力.png" width="320" height="240" alt="未入力" /><br />
-      
-    </p>
-    <h3><a href=https://github.com/Forest815/react-todo-app>Todoアプリ（GitHub へのURL）</a></h3>
-    <p>
-      製作期間:2024年10月~11月<br />
-      製作時間:約20時間<br />
-      <a href=https://forest815.github.io/react-todo-app/>アプリへのURL</a><br />
-      このアプリはNode.js と TypeScriptを使って制作したTodoアプリである。まず、タスクに「名前」、「優先度」、「期限」、「教科」を設定可能である。<br />
-      <img src="タスク追加画面.png" width="500" height="200" alt="タスク追加画面" /><br />
-      アプリで課題を追加すると下のような状態になる。優先度によって星の数が変わり、教科によってタスクの縁の色が変化する。<br />
-      また、このアプリにはソート機能があり、「優先度」、「期限」、「教科」でソートされ、昇順か降順か選べる。<br />
-      <img src="Todoアプリ.png" width="320" height="240" alt="Todoアプリ" /><br />
-      そして、右の青いマークを押すとタスクの内容を編集できる。<br />
-      <img src="編集画面.png" width="500" height="75" alt="編集画面" /><br />
-      
-    </p>
+      <div class="page-card">
+        <h3>Skills</h3>
+        <p>プログラミング言語とソフトウェアの習得状況について詳しく説明しています。</p>
+        <a href="skills.html" class="btn">詳しく見る →</a>
+      </div>
 
-    <h2>ToDoアプリ</h2>
+      <div class="page-card">
+        <h3>高専祭</h3>
+        <p>高専祭での班作品（チキンレース、ゾンビFPS）について紹介しています。</p>
+        <a href="fes.html" class="btn">詳しく見る →</a>
+      </div>
 
-    <ul>
-      <li><strong>概要</strong>: ToDoアプリは、日々のタスクを管理するためのシンプルで使いやすいウェブアプリケーションです。ユーザーはタスクの作成、編集、削除、完了状態の管理を行うことができます。主に個人のタスク管理を目的としています。</li>
-      <li><strong>開発の背景・経緯</strong>: 効率的なタスク管理を行うためのツールが必要だと感じ、Next.js と Prisma を学ぶためにこのアプリを構築しました。技術的な知識を深めるとともに、実際に使えるプロダクトを作成することを目指しました。</li>
-      <li><strong>公開URL</strong>: <a href="https://next-todo-app-demo.vercel.app/">ToDoアプリ</a></li>
-    </ul>
+      <div class="page-card">
+        <h3>作品</h3>
+        <p>プログラミング課題、自作ゲーム、自作アプリ、自作サイトなど、実装した作品を紹介しています。</p>
+        <a href="works.html" class="btn">詳しく見る →</a>
+      </div>
 
-    <h3>特徴と機能の説明</h3>
-
-    <ul>
-      <li><strong>タスク追加</strong>: タスクの作成が簡単に行えます。タスクの内容はタイトル、説明、期限、優先度、完了です。<br />
-        <img src="新規作成.png" width="500" height="600" alt="新規作成画面" /><br />
-      </li>
-      <li><strong>タスク編集</strong>: タスクの編集が簡単に行えます。編集内容はタスク追加と同じです。<br />
-        <img src="編集.png" width="500" height="500" alt="編集" /><br />
-      </li>
-      <li><strong>タスク一覧</strong>: 追加したタスク一覧が見れます。ここでタスクを期限、優先度、完了でソートできます。また、作成したタスクを削除できます。<br />
-        <img src="一覧.png" width="500" height="400" alt="一覧" /><br />
-      </li>
-    </ul>
-
-    <h3>使用技術 (技術スタック)</h3>
-
-    <ul>
-      <li><strong>言語とフレームワーク</strong>:
-        <ul>
-          <li>TypeScript</li>
-          <li>Next.js</li>
-          <li>Prisma</li>
-        </ul>
-      </li>
-      <li><strong>開発ツールとサービス</strong>:
-        <ul>
-          <li>VSCode</li>
-          <li>Supabase</li>
-          <li>Vercel</li>
-        </ul>
-      </li>
-    </ul>
-
-    <h3>開発期間・体制</h3>
-
-    <ul>
-      <li><strong>開発体制</strong>: 個人開発</li>
-      <li><strong>開発期間</strong>: 2024.12 ~ 2025.2 (約25時間)</li>
-    </ul>
-
-    <h3>工夫した点・苦労した点</h3>
-
-    <ul>
-      <li><strong>技術的な挑戦</strong>: Next.js と Prisma を組み合わせて、効率的なデータベース操作とページ生成を実現しました。</li>
-      <li><strong>苦労した点</strong>: 認証機能の実装において、セキュリティを確保しつつユーザーエクスペリエンスを向上させるために、多くの時間を費やしました。</li>
-    </ul>
-
-    <h3>既知の課題と今後の展望</h3>
-
-    <ul>
-      <li><strong>既知の課題</strong>:
-        <ul>
-          <li>タスクの検索機能が未実装</li>
-          <li>モバイルデバイスでの表示最適化が不十分</li>
-          <li>ToDoリストにコンテンツを付けれなかった</li>
-        </ul>
-      </li>
-      <li><strong>今後の展望</strong>:
-        <ul>
-          <li>タスクの検索機能を追加</li>
-          <li>モバイルデバイスでの表示最適化</li>
-          <li>コメント機能の追加</li>
-          <li>コンテンツの追加とコンテンツでのソート</li>
-        </ul>
-      </li>
-    </ul>
-
-    <h2>自作サイト</h2>
-    <h3><a href=https://forest815.github.io/web0701/>JavaScriptの基本的な技術の解説（サイトへのURL）</a></h3>
-    <p>
-      製作期間:2024年7月<br />
-      製作時間:約10時間<br />
-      <a href=https://github.com/Forest815/web0701>GitHub へのURL </a></br>
-      これはhtml とcss Javascript を使って制作したサイトである。ここではJavaScriptの基本的な技術の解説を実際のコードを使用して解説している。</br>
-      また、そのコードをコピーできるボタンを作成した。</br>
-    </p>
-
-    <h2 id="procon">高専プロコン</h2>
-
-    <h3>🍱 EAT & GO - イベント管理システム</h3>
-
-    <p>
-      「EAT & GO」は、お祭りやイベント会場での屋台の行列やごみ処理の問題を解決するために開発された革新的なシステムです。<br />
-      来場者・出店者・運営側それぞれに利便性をもたらし、持続可能で誰もが快適に楽しむことができる祭りの実現を目指します。<br />
-      <a href="https://eat-and-go.vercel.app/" target="_blank">📱 デモを体験する</a>
-    </p>
-
-    <h4>プロジェクト概要</h4>
-    <p>
-      このプロジェクトは、以下の課題を解決することを目的としています：<br />
-      • 屋台の長い行列 - スマートフォンでの事前注文により待ち時間を削減<br />
-      • ごみ処理・分別の負担 - ゲーミング機構を用いた正しい分別の促進<br />
-      • 決済の非効率性 - キャッシュレス決済による衛生的で効率的な運営<br />
-      • 環境負荷 - ポイント還元システムで環境配慮を促進<br />
-      • 運営の複雑性 - 統合ダッシュボードで全体を一元管理<br />
-    </p>
-
-    <h4>システム動作フロー</h4>
-    <p>
-      ① スマートフォンで注文 → ② 注文受付・調理・QRシール発行 → ③ 商品受け取り → ④ ゴミ箱状況確認 → ⑤ QRコードでごみ分別投棄 → ⑥ 正しく分別できればポイント付与 → ⑦ 運営側でゴミ情報確認・回収 → ⑧ ポイント景品交換
-    </p>
-
-    <h4>ユーザーロール別機能</h4>
-    <ul>
-      <li>
-        <strong>🎪 来場者向け機能</strong>: デジタルメニュー閲覧、スマートカート機能、キャッシュレス決済、リアルタイム通知、ゴミ箱マップ表示、ポイント管理、イベント情報確認
-      </li>
-      <li>
-        <strong>🏪 出店者向け機能</strong>: 注文管理画面、QRラベル印刷、売上分析、メニュー管理、在庫管理、営業時間設定、売上レポート
-      </li>
-      <li>
-        <strong>🔧 運営者向け機能</strong>: 統合ダッシュボード、ユーザー管理、廃棄物管理、お知らせ管理、マルチ会場対応、分析レポート、システム監視
-      </li>
-    </ul>
-
-    <h4>使用技術 (技術スタック)</h4>
-
-    <ul>
-      <li>
-        <strong>言語とフレームワーク</strong>:
-        <ul>
-          <li>TypeScript</li>
-          <li>Next.js 14 (App Router)</li>
-          <li>React</li>
-          <li>Tailwind CSS</li>
-        </ul>
-      </li>
-      <li>
-        <strong>バックエンド・データベース</strong>:
-        <ul>
-          <li>Supabase (PostgreSQL)</li>
-          <li>Prisma ORM</li>
-          <li>Next.js API Routes</li>
-        </ul>
-      </li>
-      <li>
-        <strong>外部API・サービス・ツール</strong>:
-        <ul>
-          <li>PayPay決済API</li>
-          <li>Brevo / SendGrid（メール通知）</li>
-          <li>Vercel（ホスティング）</li>
-          <li>GitHub（バージョン管理）</li>
-          <li>Raspberry Pi（IoT・ゴミ箱監視）</li>
-        </ul>
-      </li>
-    </ul>
-
-    <h4>主な実装機能</h4>
-
-    <ul>
-      <li>
-        <strong>🛒 ショッピング機能</strong>: スマートカート機能、複数支払い方法対応（現金・クレジット・PayPay）、リアルタイム在庫管理、店舗別メニュー表示
-      </li>
-      <li>
-        <strong>🍳 出店者向け機能</strong>: QRラベル自動生成（62mm用紙対応）、注文リアルタイム管理、売上分析ダッシュボード、メニュー管理画面
-      </li>
-      <li>
-        <strong>🔧 運営者向け機能</strong>: 統合ダッシュボード、ユーザー管理システム、Raspberry Piからのゴミ箱センサー情報をリアルタイム表示、マルチテナント対応、リッチテキストエディター
-      </li>
-      <li>
-        <strong>🎁 ポイント・ゲーミング機構</strong>: ポイント自動付与システム、景品交換機能、分別ポイントランキング、環境配慮インセンティブ
-      </li>
-    </ul>
-
-    <h4>データモデル</h4>
-    <p>
-      Prisma ORM による型安全なデータベース設計：<br />
-      • Users - ユーザー情報（来場者・出店者・運営者）<br />
-      • Products - 商品情報<br />
-      • Orders - 注文情報<br />
-      • OrderItems - 注文明細<br />
-      • Announcements - イベント情報<br />
-      • TrashBins - ゴミ箱情報（IoT連携）<br />
-      • Points - ポイント履歴<br />
-      • Shops - 出店者情報<br />
-    </p>
-
-    <h4>セキュリティ機能</h4>
-    <ul>
-      <li><strong>Supabase Auth</strong> - JWT ベースの認証システム</li>
-      <li><strong>Row Level Security (RLS)</strong> - データベースレベルのアクセス制御</li>
-      <li><strong>API 検証</strong> - 入力値の厳密な検証</li>
-      <li><strong>ロールベースアクセス制御</strong> - Role-based Access Control</li>
-      <li><strong>暗号化通信</strong> - HTTPS による全通信の暗号化</li>
-    </ul>
-
-    <h4>工夫した点・苦労した点</h4>
-
-    <ul>
-      <li>
-        <strong>複数決済方法への対応</strong>: PayPayなどの外部決済APIを統合し、複数の支払い方法をサポートするアーキテクチャを設計。ユーザーの利便性を大幅に向上させました。
-      </li>
-      <li>
-        <strong>認証・セキュリティ</strong>: Supabaseを使用したセキュアな認証機能を実装し、ユーザーデータの保護とアクセス制御を確保。
-      </li>
-      <li>
-        <strong>リアルタイムデータ同期</strong>: 注文状況の更新をリアルタイムで反映させるため、Supabaseのリアルタイム機能を活用。
-      </li>
-      <li>
-        <strong>IoT連携</strong>: Raspberry Piで監視するゴミ箱センサー情報をWebSocketでリアルタイム同期。
-      </li>
-      <li>
-        <strong>マルチテナント対応</strong>: 複数会場・複数出店者の同時管理を実現。
-      </li>
-      <li>
-        <strong>UI/UXデザイン</strong>: Tailwind CSSを活用した効率的で直感的なUI/UXを実装。
-      </li>
-    </ul>
-
-    <h4>開発期間・体制</h4>
-
-    <ul>
-      <li><strong>開発体制</strong>: チーム開発(5人)</li>
-      <li><strong>開発期間</strong>: 2025年4月 ~ 2025年10月</li>
-      <li><strong>開発時間</strong>: 約100時間以上</li>
-    </ul>
-
-    <h4>導入効果</h4>
-
-    <ul>
-      <li>
-        <strong>📉 待ち時間削減</strong>: 従来の30～60分の行列が、スマートフォン事前注文により5～10分に短縮。来場者の満足度向上。
-      </li>
-      <li>
-        <strong>♻️ ゴミ分別改善</strong>: ゲーミング機構により分別率が従来の40%から90%以上に向上。環境負荷を大幅削減。
-      </li>
-      <li>
-        <strong>💼 運営効率化</strong>: 統合ダッシュボードにより、従来の手作業による集計がリアルタイムに自動化。
-      </li>
-      <li>
-        <strong>💰 売上向上</strong>: 事前注文システムにより客単価が15～25%向上。効率的な集計で利益率も改善。
-      </li>
-    </ul>
-
-    <h4>今後の開発予定</h4>
-
-    <ul>
-      <li><strong>モバイルアプリ化</strong> - React Native による iOS/Android ネイティブアプリ</li>
-      <li><strong>AI による推奨システム</strong> - 来場者の購買パターン分析と推奨商品表示</li>
-      <li><strong>高度な分析ツール</strong> - 機械学習による需要予測</li>
-      <li><strong>複数言語対応</strong> - インバウンド対応</li>
-      <li><strong>AR メニュー表示</strong> - AR技術を使用した商品表示</li>
-      <li><strong>ブロックチェーン統合</strong> - ポイントのセキュアな管理</li>
-    </ul>
+      <div class="page-card">
+        <h3>高専プロコン</h3>
+        <p>第36回高専プロコン本選に出場した「EAT & GO」プロジェクトについて、システム設計から導入効果まで詳しく説明しています。</p>
+        <a href="procon.html" class="btn">詳しく見る →</a>
+      </div>
+    </section>
 
     <script>
       // メニューの表示/非表示を切り替える関数

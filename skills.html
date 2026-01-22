@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <!-- ハンバーガーメニューアイコン -->
+    <div class="menu-icon" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <title>Skills - Kazushi's portfolio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body> <!-- ここから本文開始 -->
+    <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
+    
+    <!-- ナビゲーションメニュー -->
+    <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="index.html" onclick="toggleMenu()">Home</a></li>
+        <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
+        <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
+        <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
+      </ul>
+    </nav>
+    
+    <h2>Skills</h2>
+    
+    <h3>プログラム言語</h3>
+    <ul>
+      <li>C++ ...プログラミング研究会で習い、パソコン甲子園などで使用した
+      <li>Python ...中学生の頃からプログラミング教室で習い、高専の授業でも学習した
+      <li>Arduino ...高専のマイクロコンピュータと工学基礎実習で学習した
+      <li>Scratch ...小中学生の時に自主的に学習し、高専でも少し学んだ
+      <li>C ...高専3年時の授業で学んだ
+      <li>HTML/CSS/JavaScript ...高専の授業や自主学習で学んだ
+      <li>TypeScript ...高専プロコンの学食管理アプリで使用した
+      <li>React ...高専プロコンで使用した
+      <li>Next.js ...高専プロコンで使用した
+      <li>SQL ...高専プロコンで使用した
+    </ul>
+
+    <h3>ソフトウェア</h3>
+    <ul>
+      <li>Ambient ...Iot-DX実験で使用している
+      <li>Git/GitHub ...プログラミング1で履修し、このポートフォリオを作るのに使用した
+      <li>VSCode ...プログラミング1で履修し、pythonやjupyter環境を使用するときによく使う
+      <li>ArduinoIDE ...Arduinoを使用する際に使った
+      <li>Deeds-DCS ...論理回路1の授業で現在進行形で使っている
+      <li>MakeCode for micro:bit ...総合工学システム実習やIot-DX実験の時にmicro:bitを使うために使用した
+      <li>TinkerCad ...総合工学システム実習の時に使い、製図をした
+      <li>Supabase ...高専プロコンで使用した
+      <li>Prisma ...高専プロコンで使用した
+    </ul>
+
+    <div style="margin-top: 40px; text-align: center;">
+      <a href="index.html" class="back-to-home">← トップに戻る</a>
+    </div>
+
+    <script>
+      // メニューの表示/非表示を切り替える関数
+      function toggleMenu() {
+        var navigation = document.getElementById("navigation");
+        if (navigation.style.display === "block") {
+          navigation.style.display = "none";
+        } else {
+          navigation.style.display = "block";
+        }
+      }
+    </script>
+  </body> <!-- ここまで本文終了 -->
+</html>

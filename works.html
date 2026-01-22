@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <!-- ハンバーガーメニューアイコン -->
+    <div class="menu-icon" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <title>作品 - Kazushi's portfolio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body> <!-- ここから本文開始 -->
+    <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
+    
+    <!-- ナビゲーションメニュー -->
+    <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="index.html" onclick="toggleMenu()">Home</a></li>
+        <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
+        <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
+        <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
+      </ul>
+    </nav>
+    
+    <h2>作品</h2>
+
+    <section class="fes-section">
+      <h3>後3赤単我我我一人回し (プログラミング1課題5)</h3>
+      <p>
+        <a href="https://github.com/Forest815/--7_35_/blob/main/%E8%AA%B2%E9%A1%8C05_35_MK.ipynb">GitHub リポジトリ</a> - Pythonで約10時間で作ったゲーム
+      </p>
+      <p>
+        デュエルマスターズの赤単我我我デッキを使った一人回しを再現し、3ターン以内に決着できるかをシミュレーションするゲーム。
+      </p>
+    </section>
+
+    <h2>自作ゲーム</h2>
+
+    <section class="fes-section">
+      <h3><a href="https://github.com/Forest815/assignment8.git">551の蓬莱ゲーム</a></h3>
+      <p>
+        自キャラクター(通天閣)を操作して落ちてくる豚まんを食べ、<a href="https://ja.wikipedia.org/wiki/%E9%A3%9B%E3%81%B3%E5%87%BA%E3%81%97%E5%9D%8A%E3%82%84">とびたくん</a>やたこ焼きから避け、通天閣を一番上まで飛ばすゲーム。
+      </p>
+      <p>
+        冬休み前に映画<a href="https://www.tondesaitama.com/">飛んで埼玉～～琵琶湖より愛をこめて</a>を観て、関西へのいじりが面白く、これをモチーフに制作。
+      </p>
+      <p>
+        <strong>製作期間:</strong> 2023年12月～2024年1月 | <strong>操作:</strong> Aキーで左、Dキーで右に移動 | <strong>ルール:</strong> 551 pointが0でゲームオーバー、最上部到達でクリア
+      </p>
+
+      <h4>キャラクター説明</h4>
+      <ul>
+        <li>通天閣 - 操作キャラ。回転しながら移動</li>
+        <li>豚まん - 触れている間、551 pointが1.5ずつ増加</li>
+        <li>とびたくん - 敵。触れている間、551 pointが1ずつ減少</li>
+        <li>たこ焼き - 敵。一度でも触れると551 pointが0になりゲームオーバー</li>
+        <li>551の蓬莱 - 一度触れると551 pointを55.1追加</li>
+        <li>火 - 通天閣が飛ぶときの演出</li>
+        <li>土 - 背景の地面を形成</li>
+      </ul>
+
+      <div class="image-gallery">
+        <div class="gallery-item">
+          <img src="ゲーム画面.png" alt="ゲーム画面" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">ゲーム画面</p>
+        </div>
+        <div class="gallery-item">
+          <img src="通天閣発車.png" alt="通天閣発車" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">frame meterが1500を超えると飛び始める</p>
+        </div>
+        <div class="gallery-item">
+          <img src="ピンチ.png" alt="ピンチ" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">551 pointが100を切ると赤く表示</p>
+        </div>
+      </div>
+    </section>
+
+    <h2>自作アプリ</h2>
+
+    <section class="fes-section">
+      <h3><a href="https://github.com/Forest815/kadai9.git">課題管理アプリ</a></h3>
+      <p><strong>製作期間:</strong> 2024年2月 | <strong>製作時間:</strong> 約6時間</p>
+      <p>PySideで制作した課題管理アプリ。教科を選択して内容を入力し、決定するとリスト表示。完了チェックで進捗を管理し、未入力なら警告を表示。</p>
+      <div class="image-gallery">
+        <div class="gallery-item">
+          <img src="入力.png" alt="入力画面" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">入力画面</p>
+        </div>
+        <div class="gallery-item">
+          <img src="動作例.png" alt="動作例" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">動作例</p>
+        </div>
+        <div class="gallery-item">
+          <img src="未入力.png" alt="未入力" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">未入力時の警告</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="fes-section">
+      <h3><a href="https://github.com/Forest815/react-todo-app">Todoアプリ (React版)</a></h3>
+      <p><strong>製作期間:</strong> 2024年10月～11月 | <strong>製作時間:</strong> 約20時間</p>
+      <p><a href="https://forest815.github.io/react-todo-app/">アプリを試す</a></p>
+      <p>Node.jsとTypeScriptで制作したTodoアプリ。タスクに名前・優先度・期限・教科を設定可能。優先度で星数が変わり、教科で縁色が変わる。ソートと編集機能付き。</p>
+      <div class="image-gallery">
+        <div class="gallery-item">
+          <img src="タスク追加画面.png" alt="タスク追加画面" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">タスク追加画面</p>
+        </div>
+        <div class="gallery-item">
+          <img src="Todoアプリ.png" alt="Todoアプリ" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">タスク一覧</p>
+        </div>
+        <div class="gallery-item">
+          <img src="編集画面.png" alt="編集画面" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">編集画面</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="fes-section">
+      <h3>ToDoアプリ (Next.js版)</h3>
+      <p><strong>概要:</strong> タスクの作成・編集・削除・完了管理ができるシンプルなWebアプリ。</p>
+      <p><strong>開発背景:</strong> タスク管理ツールが欲しく、Next.jsとPrismaを学ぶために構築。</p>
+      <p><strong>公開URL:</strong> <a href="https://next-todo-app-demo.vercel.app/">ToDoアプリ (Next.js版)</a></p>
+
+      <h4>主な機能</h4>
+      <ul>
+        <li><strong>タスク追加:</strong> タイトル・説明・期限・優先度・完了状態を設定</li>
+        <li><strong>タスク編集:</strong> タスク内容を編集可能</li>
+        <li><strong>タスク一覧:</strong> 期限・優先度・完了でソート可能</li>
+      </ul>
+
+      <h4>使用技術</h4>
+      <ul>
+        <li><strong>言語・フレームワーク:</strong> TypeScript、Next.js、Prisma</li>
+        <li><strong>開発ツール:</strong> VSCode、Supabase、Vercel</li>
+      </ul>
+
+      <p><strong>開発体制:</strong> 個人開発 | <strong>開発期間:</strong> 2024.12～2025.2 (約25時間)</p>
+
+      <h4>工夫した点・苦労した点</h4>
+      <ul>
+        <li><strong>技術的な挑戦:</strong> Next.jsとPrismaで効率的なDB操作とページ生成を実現</li>
+        <li><strong>苦労した点:</strong> 認証機能の実装でセキュリティとUX向上に時間を費やした</li>
+      </ul>
+
+      <h4>既知の課題と今後の展望</h4>
+      <ul>
+        <li><strong>既知の課題:</strong> 検索未実装、モバイル最適化不足、ToDoリストにコンテンツを付けられなかった</li>
+        <li><strong>今後の展望:</strong> 検索機能追加、モバイル最適化、コメント機能、コンテンツ追加とソート</li>
+      </ul>
+
+      <div class="image-gallery">
+        <div class="gallery-item">
+          <img src="新規作成.png" alt="新規作成画面" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">新規作成画面</p>
+        </div>
+        <div class="gallery-item">
+          <img src="編集.png" alt="編集" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">編集画面</p>
+        </div>
+        <div class="gallery-item">
+          <img src="一覧.png" alt="一覧" />
+          <p style="text-align: center; font-size: 12px; margin: 10px 0;">タスク一覧</p>
+        </div>
+      </div>
+    </section>
+
+    <h2>自作サイト</h2>
+
+    <section class="fes-section">
+      <h3><a href="https://forest815.github.io/web0701/">JavaScriptの基本的な技術の解説</a></h3>
+      <p><strong>製作期間:</strong> 2024年7月 | <strong>製作時間:</strong> 約10時間</p>
+      <p><a href="https://github.com/Forest815/web0701">GitHub リポジトリ</a></p>
+      <p>HTML/CSS/JavaScriptで制作。JavaScriptの基本技術を実際のコードで解説し、コードコピー用ボタンも用意。</p>
+    </section>
+
+    <div style="margin-top: 40px; text-align: center;">
+      <a href="index.html" class="back-to-home">← トップに戻る</a>
+    </div>
+
+    <script>
+      // メニューの表示/非表示を切り替える関数
+      function toggleMenu() {
+        var navigation = document.getElementById("navigation");
+        if (navigation.style.display === "block") {
+          navigation.style.display = "none";
+        } else {
+          navigation.style.display = "block";
+        }
+      }
+    </script>
+  </body> <!-- ここまで本文終了 -->
+</html>
