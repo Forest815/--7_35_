@@ -11,6 +11,7 @@
     <title>Skills - Kazushi's portfolio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   </head>
   <body> <!-- ここから本文開始 -->
     <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
@@ -23,38 +24,174 @@
         <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
         <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
         <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
+        <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
         <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
       </ul>
     </nav>
     
     <h2>Skills</h2>
     
-    <h3>プログラム言語</h3>
-    <ul>
-      <li>C++ ...プログラミング研究会で習い、パソコン甲子園などで使用した
-      <li>Python ...中学生の頃からプログラミング教室で習い、高専の授業でも学習した
-      <li>Arduino ...高専のマイクロコンピュータと工学基礎実習で学習した
-      <li>Scratch ...小中学生の時に自主的に学習し、高専でも少し学んだ
-      <li>C ...高専3年時の授業で学んだ
-      <li>HTML/CSS/JavaScript ...高専の授業や自主学習で学んだ
-      <li>TypeScript ...高専プロコンの学食管理アプリで使用した
-      <li>React ...高専プロコンで使用した
-      <li>Next.js ...高専プロコンで使用した
-      <li>SQL ...高専プロコンで使用した
-    </ul>
+    <section class="skills-section">
+      <h3>プログラム言語</h3>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <i class="fa-solid fa-code skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">C++</div>
+            <div class="skill-card-description">プログラミング研究会で習い、パソコン甲子園などで使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-brands fa-python skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Python</div>
+            <div class="skill-card-description">中学生の頃からプログラミング教室で習い、高専の授業でも学習した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-microchip skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Arduino</div>
+            <div class="skill-card-description">高専のマイクロコンピュータと工学基礎実習で学習した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-puzzle-piece skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Scratch</div>
+            <div class="skill-card-description">小中学生の時に自主的に学習し、高専でも少し学んだ</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-code skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">C</div>
+            <div class="skill-card-description">高専3年時の授業で学んだ</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-brands fa-html5 skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">HTML/CSS/JavaScript</div>
+            <div class="skill-card-description">高専の授業や自主学習で学んだ</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-code skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">TypeScript</div>
+            <div class="skill-card-description">高専プロコンの学食管理アプリで使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-brands fa-react skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">React</div>
+            <div class="skill-card-description">高専プロコンで使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-file-code skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Next.js</div>
+            <div class="skill-card-description">高専プロコンで使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-database skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">SQL</div>
+            <div class="skill-card-description">高専プロコンで使用した。また、4年時のデータベース工学で学習した</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <h3>ソフトウェア</h3>
-    <ul>
-      <li>Ambient ...Iot-DX実験で使用している
-      <li>Git/GitHub ...プログラミング1で履修し、このポートフォリオを作るのに使用した
-      <li>VSCode ...プログラミング1で履修し、pythonやjupyter環境を使用するときによく使う
-      <li>ArduinoIDE ...Arduinoを使用する際に使った
-      <li>Deeds-DCS ...論理回路1の授業で現在進行形で使っている
-      <li>MakeCode for micro:bit ...総合工学システム実習やIot-DX実験の時にmicro:bitを使うために使用した
-      <li>TinkerCad ...総合工学システム実習の時に使い、製図をした
-      <li>Supabase ...高専プロコンで使用した
-      <li>Prisma ...高専プロコンで使用した
-    </ul>
+    <section class="skills-section">
+      <h3>ソフトウェア</h3>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <i class="fa-solid fa-cloud skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Ambient</div>
+            <div class="skill-card-description">IoT-DX実験で使用している</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-brands fa-github skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Git/GitHub</div>
+            <div class="skill-card-description">プログラミング1で履修し、このポートフォリオを作るのに使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-code skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">VSCode</div>
+            <div class="skill-card-description">プログラミング1で履修し、pythonやjupyter環境を使用するときによく使う</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-microchip skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">ArduinoIDE</div>
+            <div class="skill-card-description">Arduinoを使用する際に使った</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-wrench skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Deeds-DCS</div>
+            <div class="skill-card-description">論理回路1の授業で使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-microchip skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">MakeCode for micro:bit</div>
+            <div class="skill-card-description">総合工学システム実習やIoT-DX実験の時にmicro:bitを使うために使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-cubes skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">TinkerCad</div>
+            <div class="skill-card-description">総合工学システム実習の時に使い、製図をした</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-database skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Supabase</div>
+            <div class="skill-card-description">高専プロコンで使用した</div>
+          </div>
+        </div>
+        
+        <div class="skill-card">
+          <i class="fa-solid fa-database skill-card-icon"></i>
+          <div class="skill-card-content">
+            <div class="skill-card-title">Prisma</div>
+            <div class="skill-card-description">高専プロコンで使用した</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div style="margin-top: 40px; text-align: center;">
       <a href="index.html" class="back-to-home">← トップに戻る</a>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <!-- ハンバーガーメニューアイコン -->
+    <div class="menu-icon" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <title>SQL/Index 解説 - Kazushi's portfolio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  </head>
+  <body>
+    <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
+
+    <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="index.html" onclick="toggleMenu()">Home</a></li>
+        <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
+        <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
+        <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
+        <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
+      </ul>
+    </nav>
+
+    <h2>遅いクエリを救え！ PostgreSQL 17 で学ぶインデックス設計と実行計画の解読法</h2>
+
+    <section class="fes-section">
+      <h3>ガイド概要</h3>
+      <p><strong>学習時間の目安:</strong> 90分〜120分</p>
+      <p>題材は架空の「ECサイトの大規模注文データ (100万件〜)」。データ量をしっかり用意し、PostgreSQL 17 の実行計画を読み解きながらインデックス設計の勘所を学びます。</p>
+    </section>
+
+    <section class="fes-section">
+      <h3>インデックス設計とは何か</h3>
+      <p>データベースのインデックスは、本の目次や索引に似た仕組みです。目次なしでは目的のページを探すために全ページを順番に読む必要がありますが、目次があれば一瞬で該当ページに辿り着けます。</p>
+      
+      <h4>インデックスの基本原理</h4>
+      <p>データベースのインデックスは主にB-Tree（バランス木）構造で実装されており、データを階層的に整理します。これにより検索操作は $O(\log N)$ の計算量で実行でき、全件スキャン（$O(N)$）と比べて劇的に高速化されます。</p>
+      
+      <h4>インデックス設計の重要性</h4>
+      <ul>
+        <li><strong>検索性能の向上:</strong> WHERE句やJOINの条件に使われる列にインデックスを作成することで、クエリ実行時間を数秒から数ミリ秒に短縮できます</li>
+        <li><strong>ソート処理の最適化:</strong> ORDER BY句で使う列にインデックスがあれば、ソート処理をスキップできる場合があります</li>
+        <li><strong>トレードオフの理解:</strong> インデックスは検索を高速化しますが、INSERT/UPDATE/DELETEの性能は低下し、ストレージも消費します</li>
+        <li><strong>適切な設計が不可欠:</strong> 不適切なインデックスは効果がないだけでなく、メンテナンスコストを増やします</li>
+      </ul>
+      
+      <h4>このガイドで学ぶこと</h4>
+      <p>本ガイドでは、単にインデックスの作り方を覚えるのではなく、PostgreSQLがどのようにインデックスを使うか（または使わないか）を理解し、実際の業務で「なぜ遅いのか」「どう改善すべきか」を判断できる力を養います。EXPLAIN ANALYZEを使った実行計画の読み方、カーディナリティと選択率の概念、複合インデックスの設計戦略など、実践的なスキルを段階的に習得します。</p>
+    </section>
+
+    <section class="fes-section">
+      <h3>第1部 準備編: 戦うためのデータを揃える </h3>
+      <p>インデックスの効果はデータ量があってこそ。数件ではシーケンシャルスキャンの方が速く、差が見えません。偏りを持たせたダミーデータを生成し、後の実験の伏線にします。</p>
+      <ol>
+        <li>orders テーブルを作成</li>
+        <li>generate_series と random で 100万〜500万件を投入</li>
+        <li>status に偏りを持たせる (例: completed 90%, cancelled 1%, pending 9%)</li>
+      </ol>
+      <h4>データ生成SQL</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">CREATE TABLE orders (
+  order_id     BIGSERIAL PRIMARY KEY,
+  user_id      INTEGER NOT NULL,
+  order_date   DATE    NOT NULL,
+  status       TEXT    NOT NULL,
+  total_amount NUMERIC(10,2) NOT NULL
+);
+
+INSERT INTO orders (user_id, order_date, status, total_amount)
+SELECT (random()*100000)::int + 1 AS user_id,
+       (DATE '2023-01-01' + (random()*365)::int) AS order_date,
+       CASE
+         WHEN random() &lt; 0.90 THEN 'completed'
+         WHEN random() &lt; 0.91 THEN 'cancelled'
+         ELSE 'pending'
+       END AS status,
+       round((random()*50000)::numeric, 2) AS total_amount
+FROM generate_series(1, 1500000);
+</code></pre>
+      </div>
+      <p>偏りを作ることで、後半の「インデックスが使われないケース」を再現できます。</p>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. なぜ偏りのあるデータを生成する必要があるのか?</div>
+      <div class="quiz-answer">後半の実験で「インデックスが使われないケース」を再現するため。データの9割がcompletedであれば、PostgreSQLはSeq Scanを選択しやすくなり、カーディナリティと選択率の実験に適したデータとなります。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. generate_series関数の役割は何か?</div>
+      <div class="quiz-answer">指定した範囲（この場合は1～1500000）の連続した数値を生成する関数。大量のダミーデータを効率的に作成するために使用します。</div>
+    </section>
+
+    <section class="fes-section">
+      <h3>第2部 基礎編: B-Treeインデックスの威力とコスト </h3>
+      <p>まずは王道の等価検索で、シーケンシャルスキャンとインデックススキャンの速度差を体験します。計算量は $O(N)$ vs $O(\log N)$。</p>
+      <h4>実験1: 干し草の山から針を探す</h4>
+      <ol>
+        <li>インデックス無しで order_id を検索し、EXPLAIN ANALYZE を確認 (Seq Scan)</li>
+        <li>PRIMARY KEY (B-Tree) を付与し、同じクエリを再実行 (Index Scan / Index Only Scan)</li>
+      </ol>
+      <h4>実行SQL</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">-- インデックスなし
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE order_id = 424242;
+
+-- 主キーインデックスを作成 (もしまだなら)
+ALTER TABLE orders ADD PRIMARY KEY (order_id);
+
+-- インデックスあり
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE order_id = 424242;
+</code></pre>
+      </div>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. インデックススキャン後、実行計画の Cost はどう変化したか?</div>
+      <div class="quiz-answer">Costが大幅に減少します。Seq Scanは全行をスキャンするためデータ量に比例したコスト（O(N)）がかかりますが、Index Scanはログオーダー（O(log N)）で目的の行を見つけられるため、データ量が多いほど差が顕著になります。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. なぜデータ量が増えると Seq Scan は遅くなるのか?</div>
+      <div class="quiz-answer">Seq Scanは全行を順番に読み込む必要があるため、データ量に比例して処理時間が増加します（O(N)）。一方、B-Treeインデックスを使用すると木構造を辿るだけで済むため、データ量が増えても対数的な増加（O(log N)）に抑えられます。</div>
+      
+      <h4>EXPLAIN ANALYZEの読み方</h4>
+      <p>実行計画を読み解く力は、チューニングの基本です。主な出力項目の意味を理解しましょう。</p>
+      <ul>
+        <li><strong>Seq Scan on orders:</strong> テーブル全体を順次スキャン。データ量に比例してコストが増加</li>
+        <li><strong>Index Scan using orders_pkey:</strong> インデックスを使って効率的に検索。ログオーダーの性能</li>
+        <li><strong>Index Only Scan:</strong> インデックスだけで全データ取得。テーブルアクセス不要で最速</li>
+        <li><strong>Bitmap Heap Scan:</strong> 中間的な方法。複数行をまとめて効率的に取得</li>
+        <li><strong>cost=0.00..8.27:</strong> 推定コスト（開始..終了）。小さいほど高速と予測</li>
+        <li><strong>rows=1:</strong> 推定行数。統計情報から算出</li>
+        <li><strong>actual time=0.015..0.016:</strong> 実測時間（ミリ秒）。実際の性能</li>
+        <li><strong>Planning Time:</strong> 実行計画の作成時間</li>
+        <li><strong>Execution Time:</strong> 実際のクエリ実行時間</li>
+      </ul>
+      <span class="important"><strong>重要:</strong> costは推定値、actual timeが実測値です。両者に大きな乖離がある場合、統計情報の更新（ANALYZE）が必要かもしれません。</span>
+    </section>
+
+    <section class="fes-section">
+      <h3>第3部 応用編: インデックスが「使われない」謎を解く </h3>
+      <p>インデックスを作ったのに遅い——よくあるトラブルを再現し、カーディナリティと選択率 (Selectivity) の境界を探ります。</p>
+      <h4>実験2: カーディナリティと選択率</h4>
+      <ul>
+        <li>ケースA: status = 'completed' (全体の約90%) → Seq Scan が選ばれる</li>
+        <li>ケースB: status = 'cancelled' (全体の約1%) → Bitmap Heap Scan または Index Scan が選ばれる</li>
+      </ul>
+      <h4>実行SQL</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">CREATE INDEX idx_orders_status ON orders(status);
+ 
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE status = 'completed';
+ 
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE status = 'cancelled';
+</code></pre>
+      </div>
+      <p><strong>なぜ？</strong> 本を最初から読む (Seq Scan) か、目次を見る (Index Scan) かは「何件ヒットするか」の期待値で決まる。PostgreSQL は統計情報をもとにコストを見積もります。</p>
+      <p><strong>SQLドリル:</strong> 日付範囲など別条件で、インデックスが効く境界 (ヒット件数の割合) を探ってみよう。</p>      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. カーディナリティとは何か?</div>
+      <div class="quiz-answer">列の値の種類の多さを示す指標。例えばstatus列がcompleted/cancelled/pendingの3値しかない場合、カーディナリティは低い。主キーのように全行で異なる値を持つ列はカーディナリティが高くなります。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. PostgreSQLがSeq ScanとIndex Scanを切り替える判断基準は?</div>
+      <div class="quiz-answer">主に選択率（ヒット件数/全件数）に基づきます。一般的に全体の5～15%以上のデータにヒットする場合、インデックスを使うよりもSeq Scanの方がコストが低いと判断されます。統計情報を元に実行計画オプティマイザが自動で決定します。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q3. インデックスがあるのに使われない場合の対処法は?</div>
+      <div class="quiz-answer">①統計情報を更新（ANALYZE）、②WHERE句の条件を見直し選択率を下げる、③部分インデックスを検討、④クエリヒントでIndex Scanを強制（本番非推奨）などがあります。ただし多くの場合、PostgreSQLの判断は正しいため、無理にインデックスを使わせる必要はありません。</div>
+      <span class="important"><strong>ポイント:</strong> インデックスを「使わせる」ことより、「PostgreSQLが正しく判断できる環境を作る」ことが大切です。</span>    </section>
+
+    <section class="fes-section">
+      <h3>第3.5部 実践編: 部分インデックスと条件付きインデックス </h3>
+      <p>インデックスのサイズを削減し、更新性能を維持しながら検索を高速化する「部分インデックス」を学びます。</p>
+      
+      <h4>部分インデックスとは</h4>
+      <p>テーブルの一部の行だけにインデックスを作成する手法です。例えば「未完了の注文」だけを頻繁に検索する場合、完了済みの大量データにインデックスを貼る必要はありません。</p>
+      
+      <h4>実験4: 部分インデックスの効果</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 通常のインデックス（全行対象）
+CREATE INDEX idx_orders_status_full ON orders(status);
+
+-- 部分インデックス（pendingのみ対象）
+CREATE INDEX idx_orders_pending ON orders(order_date)
+  WHERE status = 'pending';
+
+-- 部分インデックスを使うクエリ
+EXPLAIN ANALYZE
+SELECT * FROM orders
+WHERE status = 'pending'
+  AND order_date >= '2023-06-01'
+ORDER BY order_date;
+</code></pre>
+      </div>
+      
+      <h4>部分インデックスの利点</h4>
+      <ul>
+        <li><strong>サイズ削減:</strong> インデックスが小さくなり、メモリ効率が向上</li>
+        <li><strong>更新性能:</strong> インデックス更新の対象行が減り、INSERT/UPDATEが高速化</li>
+        <li><strong>キャッシュ効率:</strong> 必要なデータだけがメモリに載るため、ヒット率向上</li>
+        <li><strong>選択率改善:</strong> 特定条件に特化することで、常に効率的に使われる</li>
+      </ul>
+      
+      <h4>実践例: ソフトデリートされていない行だけをインデックス</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">-- deleted_at が NULL の行だけにインデックス
+CREATE INDEX idx_active_users ON users(email)
+  WHERE deleted_at IS NULL;
+
+-- このクエリで効率的に使われる
+SELECT * FROM users
+WHERE email = 'user@example.com'
+  AND deleted_at IS NULL;
+</code></pre>
+      </div>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. 部分インデックスが有効なユースケースは?</div>
+      <div class="quiz-answer">①特定ステータスのレコードだけを頻繁に検索する場合、②論理削除（ソフトデリート）で有効なレコードだけを扱う場合、③直近データだけを検索する場合（例: 過去1年分のみ）、④NULLではない行だけを対象にする場合などです。全体の10～20%以下のデータに絞れる場合に特に効果的です。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. 部分インデックス使用時の注意点は?</div>
+      <div class="quiz-answer">クエリのWHERE句にインデックス作成時と同じ条件を含める必要があります。例えば WHERE status = 'pending' で部分インデックスを作った場合、クエリにもこの条件が必要です。条件が一致しないとインデックスは使われません。</div>
+    </section>
+
+    <section class="fes-section">
+      <h3>第4部 発展編: 複合インデックスと最左プレフィクス </h3>
+      <p>複数列の B-Tree では「左から順に並ぶ」ため、列の並び順が性能を左右します。</p>
+      <h4>実験3: 複合インデックスの順序</h4>
+      <h4>実行SQL</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">CREATE INDEX idx_orders_user_date ON orders(user_id, order_date);
+ 
+    -- 効く (user_id で絞る)
+    EXPLAIN ANALYZE
+    SELECT * FROM orders WHERE user_id = 100 AND order_date &gt;= '2023-06-01';
+ 
+    -- 効きにくい (order_date 単独)
+    EXPLAIN ANALYZE
+    SELECT * FROM orders WHERE order_date &gt;= '2023-06-01';
+ 
+    -- 爆速 (両方使う)
+    EXPLAIN ANALYZE
+    SELECT * FROM orders WHERE user_id = 100 AND order_date BETWEEN '2023-06-01' AND '2023-06-30';
+    </code></pre>
+      </div>
+      <p><strong>テキスト図解 (B-Tree の並びイメージ):</strong></p>
+      <div class="diagram-block">
+        <pre><code>user_id | order_date | ...
+------- | ---------- | ----
+100     | 2023-06-01
+100     | 2023-06-02
+100     | 2023-06-03
+101     | 2023-01-10
+101     | 2023-01-11
+...</code></pre>
+      </div>
+      <p>左端列 (user_id) でまずソートされ、その中で order_date が並ぶため、左側の列を使わない条件では効きにくくなります。</p>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. 複合インデックス (A, B) がある場合、WHERE B = ? だけの条件でインデックスは効くか?</div>
+      <div class="quiz-answer">基本的に効きません（または効率が悪い）。B-Treeは左端列(A)でソートされているため、Aを指定せずBだけで検索すると木構造を効率的に辿れません。この場合は別途 (B) のインデックスを作成するか、WHERE句にAの条件も加える必要があります。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. 複合インデックスの列順をどう決めるべきか?</div>
+      <div class="quiz-answer">一般的には①カーディナリティが高い列を左に、②WHERE句で頻繁に使われる列を左に、③等価条件(=)の列を範囲条件(>, BETWEEN)の列より左に配置します。実際のクエリパターンを分析し、最も頻繁に実行されるクエリに最適化するのが基本です。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q3. (user_id, order_date) と (order_date, user_id) の違いは?</div>
+      <div class="quiz-answer">根本的に異なるインデックスです。前者はuser_id→order_dateの順でソート、後者はorder_date→user_idの順でソート。WHERE user_id = X には前者が、WHERE order_date = Y には後者が効きます。クエリパターンに応じて適切な順序を選ぶ必要があります。</div>
+    </section>
+
+    <section class="fes-section">
+      <h3>第5部 総合演習: スロークエリ・チューニング </h3>
+      <p>講師が用意した「遅い検索クエリ」を最適化し、2秒 → 0.05秒未満を目指します。インデックスは1つだけ作成可。</p>
+      <h4>遅いクエリ例と改善ミッション</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 遅い例: ユーザ単位の期間検索 + ソート
+EXPLAIN ANALYZE
+SELECT o.order_id, o.order_date, o.total_amount, u.name
+FROM orders o
+JOIN users u ON u.id = o.user_id
+WHERE o.user_id = 4242
+  AND o.order_date BETWEEN '2023-06-01' AND '2023-06-30'
+ORDER BY o.order_date DESC;
+
+-- ミッション: 最適な CREATE INDEX を1本だけ設計せよ
+-- 例解 (一案):
+-- CREATE INDEX idx_orders_user_date_only ON orders(user_id, order_date DESC) INCLUDE (total_amount);
+</code></pre>
+      </div>
+      <p>索引候補を試し、EXPLAIN ANALYZE でコスト・実行時間・使用ノード (Index Scan / Index Only Scan / Bitmap) を確認して改善します。</p>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. なぜ例解のインデックスに DESC を指定しているのか?</div>
+      <div class="quiz-answer">クエリが ORDER BY o.order_date DESC でソートしているため。インデックスを降順で作成しておくと、ソート処理をスキップできIndex Only Scanが可能になり、さらに高速化できます。</div>
+      <span class="important"><strong>ポイント:</strong> インデックスの列順だけでなく、昇順/降順も性能に大きく影響します。</span>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. INCLUDE句の役割は何か?</div>
+      <div class="quiz-answer">インデックスのリーフノードに追加データを含めることで、Index Only Scanを可能にします。total_amountをINCLUDEすることで、テーブル本体にアクセスせずインデックスだけで全データを取得できます(Covering Index)。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q3. Index Scan と Index Only Scan の違いは?</div>
+      <div class="quiz-answer">Index Scanはインデックスで行を特定した後、テーブル本体からデータを取得します。Index Only Scanはインデックスだけで全データを取得できるため、テーブルアクセスが不要で高速です。INCLUDEやカバリングインデックスでIndex Only Scanを実現できます。</div>
+    </section>
+
+    <section class="fes-section">
+      <h3>第6部 運用編: インデックスのメンテナンスとベストプラクティス </h3>
+      <p>インデックスは作って終わりではありません。適切な運用とメンテナンスが継続的な性能維持に不可欠です。</p>
+      
+      <h4>統計情報の更新</h4>
+      <p>PostgreSQLは統計情報をもとに最適な実行計画を選びます。データ量が大きく変化した後は、統計情報を更新しましょう。</p>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 特定テーブルの統計情報を更新
+ANALYZE orders;
+
+-- データベース全体の統計情報を更新
+ANALYZE;
+
+-- VACUUMと同時実行（不要データ削除 + 統計更新）
+VACUUM ANALYZE orders;
+</code></pre>
+      </div>
+      
+      <h4>インデックスの再構築</h4>
+      <p>長期運用でインデックスが肥大化・断片化した場合、再構築で性能を回復できます。</p>
+      <div class="code-block">
+        <pre><code class="language-sql">-- インデックスの再構築（ロックあり）
+REINDEX INDEX idx_orders_user_date;
+
+-- テーブルの全インデックスを再構築
+REINDEX TABLE orders;
+
+-- 並行再構築（ロックなし、PostgreSQL 12+）
+CREATE INDEX CONCURRENTLY idx_orders_user_date_new 
+  ON orders(user_id, order_date);
+DROP INDEX CONCURRENTLY idx_orders_user_date;
+ALTER INDEX idx_orders_user_date_new RENAME TO idx_orders_user_date;
+</code></pre>
+      </div>
+      
+      <h4>インデックス設計のベストプラクティス</h4>
+      <ul>
+        <li><strong>必要なものだけ作る:</strong> インデックスは万能ではない。更新コストとのバランスを考慮</li>
+        <li><strong>実測で確認:</strong> EXPLAIN ANALYZEで効果を確認してから本番適用</li>
+        <li><strong>複合インデックスを活用:</strong> 複数の単一列インデックスより、1つの複合インデックスの方が効率的な場合が多い</li>
+        <li><strong>カバリングインデックス:</strong> INCLUDEを使ってIndex Only Scanを狙う</li>
+        <li><strong>部分インデックス:</strong> 特定条件に絞ってサイズとコストを削減</li>
+        <li><strong>定期メンテナンス:</strong> VACUUMとANALYZEを定期実行</li>
+        <li><strong>監視:</strong> pg_stat_user_indexesで未使用インデックスを特定し削除</li>
+      </ul>
+      
+      <h4>未使用インデックスの検出</h4>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 使用されていないインデックスを検出
+SELECT schemaname, tablename, indexname, idx_scan
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+  AND indexrelname NOT LIKE '%_pkey'
+ORDER BY pg_relation_size(indexrelid) DESC;
+
+-- インデックスのサイズ確認
+SELECT indexrelname, pg_size_pretty(pg_relation_size(indexrelid))
+FROM pg_stat_user_indexes
+ORDER BY pg_relation_size(indexrelid) DESC;
+</code></pre>
+      </div>
+      
+      <h4>よくある落とし穴</h4>
+      <ul>
+        <li><strong>関数適用でインデックスが効かない:</strong> WHERE LOWER(email) = 'user@example.com' → 関数インデックスが必要</li>
+        <li><strong>暗黙の型変換:</strong> WHERE user_id = '123' （文字列と数値） → インデックスが効かない場合あり</li>
+        <li><strong>OR条件:</strong> WHERE a = 1 OR b = 2 → 両方の列にインデックスが必要</li>
+        <li><strong>LIKE前方一致以外:</strong> WHERE name LIKE '%Smith' → インデックス効かず（前方一致のみ有効）</li>
+        <li><strong>統計情報の古さ:</strong> 大量INSERT後にANALYZE忘れ → 誤った実行計画</li>
+      </ul>
+      
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. ANALYZEコマンドの役割は?</div>
+      <div class="quiz-answer">テーブルの統計情報を収集・更新するコマンド。データ分布、行数、カーディナリティなどを分析し、クエリオプティマイザが最適な実行計画を選べるようにします。大量のINSERT/DELETE後や定期的に実行することが推奨されます。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. なぜインデックスを作りすぎると問題なのか?</div>
+      <div class="quiz-answer">①INSERT/UPDATE/DELETE時にすべてのインデックスを更新する必要があり、書き込み性能が低下、②ストレージ容量を消費、③メモリ（shared_buffers）を圧迫、④VACUUMやANALYZEの時間が増加、⑤未使用インデックスの管理コストが発生します。実測で効果があるものだけを維持すべきです。</div>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q3. 本番環境でインデックスを安全に追加する方法は?</div>
+      <div class="quiz-answer">CREATE INDEX CONCURRENTLY を使います。通常のCREATE INDEXはテーブルをロックしますが、CONCURRENTLYオプションを付けると書き込みをブロックせずにインデックスを作成できます。ただし通常より時間がかかり、ディスク容量も一時的に多く消費します。</div>
+      <span class="warning"><strong>本番環境への注意:</strong> 本番環境でのインデックス作成は必ずCONCURRENTLYオプションを使用し、テーブルロックを避けましょう。</span>
+    </section>
+
+    <section class="fes-section">
+      <h3>まとめと次のステップ</h3>
+      <p>このガイドで学んだインデックス設計の基礎を、実際のプロジェクトで活用してみましょう。</p>
+      
+      <h4>習得したスキル</h4>
+      <ul>
+        <li>EXPLAIN ANALYZEを使った実行計画の読み方</li>
+        <li>B-Treeインデックスの仕組みと計算量の理解</li>
+        <li>カーディナリティと選択率がインデックス利用に与える影響</li>
+        <li>複合インデックスの列順の重要性（最左プレフィクス）</li>
+        <li>部分インデックスによるサイズとコストの最適化</li>
+        <li>Index Only Scanとカバリングインデックスの設計</li>
+        <li>インデックスの運用とメンテナンス手法</li>
+      </ul>
+      
+      <h4>さらなる学習のために</h4>
+      <ul>
+        <li><strong>公式ドキュメント:</strong> <a href="https://www.postgresql.org/docs/current/indexes.html" target="_blank">PostgreSQL Indexes</a></li>
+        <li><strong>GINインデックス:</strong> 全文検索やJSON検索に特化したインデックスタイプ</li>
+        <li><strong>GiSTインデックス:</strong> 地理データや範囲検索に適したインデックス</li>
+        <li><strong>BRINインデックス:</strong> 超大規模テーブル向けの軽量インデックス</li>
+        <li><strong>パーティショニング:</strong> テーブル分割と組み合わせた高度な設計</li>
+        <li><strong>並列クエリ:</strong> PostgreSQLの並列処理機能との組み合わせ</li>
+      </ul>
+      
+      <p><strong>実践課題:</strong> 自分のプロジェクトで最も遅いクエリを特定し、このガイドで学んだ技法を使って最適化してみましょう。EXPLAIN ANALYZEで効果を測定し、改善前後の実行時間を比較してください。</p>
+    </section>
+
+    <div style="margin-top: 40px; text-align: center;">
+      <a href="index.html" class="back-to-home">← トップに戻る</a>
+    </div>
+
+    <script>
+      // メニューの表示/非表示を切り替える関数
+      function toggleMenu() {
+        var navigation = document.getElementById("navigation");
+        if (navigation.style.display === "block") {
+          navigation.style.display = "none";
+        } else {
+          navigation.style.display = "block";
+        }
+      }
+      
+      // 定着確認の答えを表示/非表示
+      function toggleAnswer(element) {
+        var answer = element.nextElementSibling;
+        if (answer && answer.classList.contains('quiz-answer')) {
+          answer.classList.toggle('show');
+        }
+      }
+      
+      // セクションの折りたたみ機能
+      document.addEventListener('DOMContentLoaded', function() {
+        const sections = document.querySelectorAll('.fes-section');
+        
+        sections.forEach(function(section) {
+          const heading = section.querySelector('h3');
+          if (heading) {
+            heading.addEventListener('click', function() {
+              section.classList.toggle('collapsed');
+            });
+          }
+        });
+      });
+      
+      // コードブロックにコピーボタンを追加
+      document.addEventListener('DOMContentLoaded', function() {
+        const codeBlocks = document.querySelectorAll('.code-block');
+        
+        codeBlocks.forEach(function(block) {
+          // コピーボタンを作成
+          const button = document.createElement('button');
+          button.className = 'copy-button';
+          button.textContent = 'Copy';
+          
+          // コピー機能
+          button.addEventListener('click', function() {
+            const code = block.querySelector('code');
+            const text = code ? code.textContent : block.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+              // コピー成功の視覚的フィードバック
+              button.textContent = 'Copied!';
+              button.classList.add('copied');
+              
+              setTimeout(function() {
+                button.textContent = 'Copy';
+                button.classList.remove('copied');
+              }, 2000);
+            }).catch(function(err) {
+              console.error('コピーに失敗しました:', err);
+              button.textContent = 'Error';
+              setTimeout(function() {
+                button.textContent = 'Copy';
+              }, 2000);
+            });
+          });
+          
+          block.appendChild(button);
+        });
+      });
+    </script>
+  </body>
+</html>
