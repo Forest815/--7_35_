@@ -477,3 +477,25 @@ a:visited {
   color: #ffa500;
   font-weight: bold;
 }
+
+/* 実行結果ブロック */
+.result-block {
+  position: relative;
+  background-color: #0d1f27;
+  border: 1px solid orchid;
+  border-left: 4px solid orchid;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 12px 0 18px;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.result-block pre {
+  margin: 0;
+  color: #ffe9a8;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre;
+  font-family: 'Courier New', monospace;
+}

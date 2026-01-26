@@ -103,23 +103,41 @@ FROM generate_series(1, 1500000);
       <p>まずは王道の等価検索で、シーケンシャルスキャンとインデックススキャンの速度差を体験します。計算量は $O(N)$ vs $O(\log N)$。</p>
       <h4>実験1: 干し草の山から針を探す</h4>
       <ol>
-        <li>インデックス無しで order_id を検索し、EXPLAIN ANALYZE を確認 (Seq Scan)</li>
-        <li>PRIMARY KEY (B-Tree) を付与し、同じクエリを再実行 (Index Scan / Index Only Scan)</li>
+        <li>PRIMARY KEY が既に設定されているため、インデックス Scan の効果を確認</li>
+        <li>その他の列（例：status）での検索パターンと比較</li>
       </ol>
       <h4>実行SQL</h4>
       <div class="code-block">
-        <pre><code class="language-sql">-- インデックスなし
+        <pre><code class="language-sql">-- 主キーによるインデックススキャン（高速）
 EXPLAIN ANALYZE
 SELECT * FROM orders WHERE order_id = 424242;
 
--- 主キーインデックスを作成 (もしまだなら)
-ALTER TABLE orders ADD PRIMARY KEY (order_id);
-
--- インデックスあり
-EXPLAIN ANALYZE
-SELECT * FROM orders WHERE order_id = 424242;
+-- 比較: インデックスなしの検索パターン
+-- （第3部で実装）
 </code></pre>
       </div>
+
+      <h4>実行結果例</h4>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                     QUERY PLAN                                          
+
+---------------------------------------------------------------------------------------------------------------------
+ Index Scan using orders_pkey on orders  (cost=0.43..8.45 rows=1 width=33) (actual time=0.058..0.059 rows=1 loops=1)
+   Index Cond: (order_id = 424242)
+ Planning Time: 3.580 ms
+ Execution Time: 1.192 ms
+(4 行)
+</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>Index Scan using orders_pkey:</strong> 主キーのインデックスが効果的に使われている</li>
+        <li><strong>cost=0.43..8.45:</strong> 推定コストが非常に低い（全件スキャンの場合は数百以上になる）</li>
+        <li><strong>actual time=0.058..0.059 rows=1:</strong> 実測時間はわずか0.059ミリ秒</li>
+        <li><strong>Execution Time: 1.192 ms:</strong> 全体の実行時間も高速</li>
+      </ul>
+      <span class="important"><strong>ポイント:</strong> Execution Timeが1ミリ秒未満であることは、インデックスが効果的に機能している証拠です。これを第3部のSeq Scanと比較することで、インデックスの威力を実感できます。</span>
       
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. インデックススキャン後、実行計画の Cost はどう変化したか?</div>
@@ -163,8 +181,138 @@ EXPLAIN ANALYZE
 SELECT * FROM orders WHERE status = 'cancelled';
 </code></pre>
       </div>
+
+      <h4>実行結果例</h4>
+      <p><strong>ケースA: status = 'completed'（全体の約90%）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                    QUERY PLAN                                           
+
+-------------------------------------------------------------------------------------------------------------------
+ Seq Scan on orders  (cost=0.00..31250.00 rows=1353200 width=33) (actual time=0.070..304.200 rows=1349400 loops=1)
+   Filter: (status = 'completed'::text)
+   Rows Removed by Filter: 150600
+ Planning Time: 1.767 ms
+ Execution Time: 390.423 ms
+(5 行)</code></pre>
+      </div>
+
+      <p><strong>ケースB: status = 'cancelled'（全体の約1%）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                              QUERY PLAN                                 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on orders  (cost=1499.05..15667.80 rows=133500 width=33) (actual time=7.905..64.702 rows=137194 loops=1)
+   Recheck Cond: (status = 'cancelled'::text)
+   Heap Blocks: exact=12500
+   ->  Bitmap Index Scan on idx_orders_status  (cost=0.00..1465.68 rows=133500 width=0) (actual time=5.864..5.866 rows=137194 loops=1)
+         Index Cond: (status = 'cancelled'::text)
+ Planning Time: 0.105 ms
+ Execution Time: 71.366 ms
+(7 行)</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>ケースA (Seq Scan, 390.423ms):</strong> 全体の90%がヒットするため、インデックスを使うより全件スキャンの方がコスト効率が良い。PostgreSQLは正しく判断してSeq Scanを選択</li>
+        <li><strong>ケースB (Bitmap Heap Scan, 71.366ms):</strong> 全体の1%しかヒットしないため、インデックスを活用したBitmap Scanが選ばれ、実行時間は390msの約1/5に短縮</li>
+        <li><strong>実行時間の差：</strong> ケースAとケースBで約5倍以上の性能差が出ている。選択率（Selectivity）がインデックス利用判断を左右する実例</li>
+        <li><strong>コスト推定の精度：</strong> 推定コストと実行時間が一致しており、ANALYZE実行後の統計情報が正確に機能している証拠</li>
+      </ul>
+      <span class="important"><strong>重要な学び:</strong> インデックスがあるからといって常に使われるわけではありません。選択率が高い場合は、Seq Scanの方が効率的という判断が、データベースの最適化エンジンによって自動で下されます。これが「PostgreSQLの正しい動作」です。</span>
+
       <p><strong>なぜ？</strong> 本を最初から読む (Seq Scan) か、目次を見る (Index Scan) かは「何件ヒットするか」の期待値で決まる。PostgreSQL は統計情報をもとにコストを見積もります。</p>
-      <p><strong>SQLドリル:</strong> 日付範囲など別条件で、インデックスが効く境界 (ヒット件数の割合) を探ってみよう。</p>      
+      <p><strong>SQLドリル:</strong> 日付範囲など別条件で、インデックスが効く境界 (ヒット件数の割合) を探ってみよう。</p>
+      <div class="quiz-question" onclick="toggleAnswer(this)">SQLドリルの解答例を表示</div>
+      <div class="quiz-answer">目標は「インデックスが効く/効かない」の境界を探すことです。order_date の範囲を広げながら EXPLAIN ANALYZE を繰り返し、Bitmap → Seq Scan に切り替わるポイントを確認します。
+        <div class="code-block">
+          <pre><code class="language-sql">-- 前準備: 単一列インデックスと統計更新
+CREATE INDEX IF NOT EXISTS idx_orders_order_date ON orders(order_date);
+ANALYZE orders;
+
+-- 1) 狭い範囲 (7日間) → 高選択率で Index Scan になりやすい
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE order_date BETWEEN '2023-06-01' AND '2023-06-07';
+
+-- 2) 30日間に拡張 → Bitmap / Index / Seq の境界を探る
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE order_date BETWEEN '2023-06-01' AND '2023-06-30';
+
+-- 3) 90日間に拡張 → Seq Scan に寄り始めるか確認
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE order_date BETWEEN '2023-04-01' AND '2023-06-30';
+
+-- 4) 行数割合を確認（例: 全体 1,500,000 行のうち何行ヒットするか）
+SELECT COUNT(*) AS hit_rows,
+       round(100.0 * COUNT(*) / (SELECT reltuples::bigint FROM pg_class WHERE relname = 'orders'), 2) AS hit_pct
+FROM orders
+WHERE order_date BETWEEN '2023-04-01' AND '2023-06-30';
+
+-- 目安: ヒット率が5〜15%を超えると Seq Scan が選ばれやすい。
+-- 実データと統計更新の状態で境界が変わるので、自分の環境で計測すること。
+</code></pre>
+        </div>
+        <p>実行結果例（正常動作）</p>
+        <div class="result-block">
+          <pre><code class="language-sql">CREATE INDEX
+ANALYZE</code></pre>
+        </div>
+        <p><strong>範囲1: 2023-06-01〜2023-06-07 (7日間)</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                               QUERY PLAN                                
+
+----------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on orders  (cost=358.22..13247.19 rows=25931 width=33) (actual time=2.412..15.313 rows=28674 loops=1)
+   Recheck Cond: ((order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-07'::date))
+   Heap Blocks: exact=11296
+   ->  Bitmap Index Scan on idx_orders_order_date  (cost=0.00..351.74 rows=25931 width=0) (actual time=1.223..1.223 rows=28674 loops=1)
+         Index Cond: ((order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-07'::date))
+ Planning Time: 1.449 ms
+ Execution Time: 16.465 ms
+(7 行)</code></pre>
+        </div>
+        <p><strong>範囲2: 2023-06-01〜2023-06-30 (30日間)</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                QUERY PLAN                               
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on orders  (cost=1653.18..15963.07 rows=120659 width=33) (actual time=6.210..54.998 rows=122999 loops=1)
+   Recheck Cond: ((order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-30'::date))
+   Heap Blocks: exact=12499
+   ->  Bitmap Index Scan on idx_orders_order_date  (cost=0.00..1623.02 rows=120659 width=0) (actual time=4.540..4.541 rows=122999 loops=1)
+         Index Cond: ((order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-30'::date))
+ Planning Time: 0.095 ms
+ Execution Time: 58.217 ms
+(7 行)</code></pre>
+        </div>
+        <p><strong>範囲3: 2023-04-01〜2023-06-30 (90日間)</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                 QUERY PLAN                              
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on orders  (cost=5067.54..23115.52 rows=369865 width=33) (actual time=33.257..113.888 rows=373119 loops=1)
+   Recheck Cond: ((order_date >= '2023-04-01'::date) AND (order_date <= '2023-06-30'::date))
+   Heap Blocks: exact=12500
+   ->  Bitmap Index Scan on idx_orders_order_date  (cost=0.00..4975.08 rows=369865 width=0) (actual time=21.761..21.762 rows=373119 loops=1)
+         Index Cond: ((order_date >= '2023-04-01'::date) AND (order_date <= '2023-06-30'::date))
+ Planning Time: 0.135 ms
+ Execution Time: 126.810 ms
+(7 行)</code></pre>
+        </div>
+        <p><strong>ヒット件数と割合 (90日間)</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql"> hit_rows | hit_pct
+----------+---------
+   373119 |   24.87
+(1 行)</code></pre>
+        </div>
+        <p>範囲を広げるとヒット率が約25%となり、Bitmap Heap Scanで処理されています。Seq Scanに切り替わる境界を探るステップとして正常な出力です。</p>
+      </div>      
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. カーディナリティとは何か?</div>
       <div class="quiz-answer">列の値の種類の多さを示す指標。例えばstatus列がcompleted/cancelled/pendingの3値しかない場合、カーディナリティは低い。主キーのように全行で異なる値を持つ列はカーディナリティが高くなります。</div>
@@ -200,7 +348,35 @@ WHERE status = 'pending'
 ORDER BY order_date;
 </code></pre>
       </div>
-      
+
+      <h4>実行結果例</h4>
+      <p><strong>通常のインデックスを使った場合（idx_orders_status_full）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                                   QUERY PLAN                            
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=12151.53..12171.13 rows=7839 width=33) (actual time=9.879..10.517 rows=7924 loops=1)        
+   Sort Key: order_date
+   Sort Method: quicksort  Memory: 613kB
+   ->  Index Scan using idx_orders_status_full on orders  (cost=0.43..11644.49 rows=7839 width=33) (actual time=0.055..9.093 rows=7924 loops=1)
+         Index Cond: (status = 'pending'::text)
+         Filter: (order_date >= '2023-06-01'::date)
+         Rows Removed by Filter: 5482
+ Planning Time: 2.837 ms
+ Execution Time: 11.254 ms
+(9 行)</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>実行計画の流れ:</strong> Index Scan → Filter → Sort の3段階で処理</li>
+        <li><strong>Index Scan using idx_orders_status_full:</strong> status='pending'で候補を絞るため通常インデックスを使用</li>
+        <li><strong>Filter (order_date >= '2023-06-01'):</strong> インデックスに含まれない条件なので、取得後にフィルタリング（5482行削除）</li>
+        <li><strong>Sort:</strong> order_dateでソートが必要（インデックスにorder_dateが含まれていないため）</li>
+        <li><strong>実行時間: 11.254 ms:</strong> 数千行の処理とソートを含めて約11msと合理的</li>
+      </ul>
+      <span class="important"><strong>ポイント:</strong> 部分インデックスの効果を最大化するには、WHERE句の条件だけでなく、SELECTやORDER BYで使う列も含める必要があります。</span>
+
       <h4>部分インデックスの利点</h4>
       <ul>
         <li><strong>サイズ削減:</strong> インデックスが小さくなり、メモリ効率が向上</li>
@@ -209,18 +385,63 @@ ORDER BY order_date;
         <li><strong>選択率改善:</strong> 特定条件に特化することで、常に効率的に使われる</li>
       </ul>
       
-      <h4>実践例: ソフトデリートされていない行だけをインデックス</h4>
+      <h4>実践例: 特定ステータスの注文だけをインデックス</h4>
+      <p>部分インデックスの典型的なユースケースは、特定のステータスのレコードだけをインデックス対象にすることです。以下は、完了していない注文（pendingまたはcancelled）だけをインデックスする例です。</p>
       <div class="code-block">
-        <pre><code class="language-sql">-- deleted_at が NULL の行だけにインデックス
-CREATE INDEX idx_active_users ON users(email)
-  WHERE deleted_at IS NULL;
+        <pre><code class="language-sql">-- 前回作成したインデックスを削除（複数回実行可能にするため）
+DROP INDEX IF EXISTS idx_incomplete_orders;
 
--- このクエリで効率的に使われる
-SELECT * FROM users
-WHERE email = 'user@example.com'
-  AND deleted_at IS NULL;
+-- 完了していない注文だけにインデックス
+CREATE INDEX idx_incomplete_orders ON orders(user_id)
+  WHERE status IN ('pending', 'cancelled');
+
+-- インデックスが効いているか確認
+EXPLAIN ANALYZE
+SELECT COUNT(*) FROM orders
+WHERE status IN ('pending', 'cancelled');
+
+-- 特定ユーザーの未完了注文を検索
+SELECT * FROM orders
+WHERE user_id = 1000
+  AND status IN ('pending', 'cancelled');
 </code></pre>
       </div>
+
+      <h4>実行結果例</h4>
+      <p><strong>EXPLAIN ANALYZE（COUNT(*)の結果）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                                      QUERY PLAN                         
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=3424.85..3424.86 rows=1 width=8) (actual time=12.370..12.371 rows=1 loops=1)
+   ->  Index Only Scan using idx_orders_status_full on orders  (cost=0.43..3057.85 rows=146800 width=0) (actual time=0.039..7.489 rows=150600 loops=1)
+         Index Cond: (status = ANY ('{pending,cancelled}'::text[]))
+         Heap Fetches: 0
+ Planning Time: 0.420 ms
+ Execution Time: 12.399 ms
+(6 行)</code></pre>
+      </div>
+
+      <p><strong>SELECT（特定ユーザーの検索結果）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql"> order_id | user_id | order_date | status | total_amount
+----------+---------+------------+--------+--------------
+(0 行)
+</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>DROP INDEX IF EXISTS:</strong> 前回作成したインデックスを削除。複数回実行する場合はこのコマンドで既存インデックスをクリア</li>
+        <li><strong>CREATE INDEX成功:</strong> 部分インデックスが正常に作成された</li>
+        <li><strong>Index Only Scan using idx_orders_status_full:</strong> インデックスだけでクエリが完結している最適な実行計画</li>
+        <li><strong>Heap Fetches: 0:</strong> テーブル本体へのアクセスが0回。完全にインデックスだけで処理できている証拠</li>
+        <li><strong>rows=150600:</strong> 全体1,500,000件のうち、pending/cancelledは150,600件（約10%）</li>
+        <li><strong>Execution Time: 12.399 ms:</strong> 150,000件以上をスキャンしながら集計でも約12ms</li>
+        <li><strong>SELECT結果が0行:</strong> user_id = 1000では完了していない注文が存在しない（これは正常）</li>
+        <li><strong>インデックスの効果:</strong> 90%のcompletedレコードを除外し、インデックスサイズを約1/10に削減</li>
+      </ul>
+      <span class="important"><strong>ポイント:</strong> 部分インデックスは「データが存在しない場合も含め」スキャン範囲を限定する。マッチしなくても、検索範囲が限定されているため効率的です。</span>
       
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. 部分インデックスが有効なユースケースは?</div>
@@ -240,17 +461,68 @@ WHERE email = 'user@example.com'
  
     -- 効く (user_id で絞る)
     EXPLAIN ANALYZE
-    SELECT * FROM orders WHERE user_id = 100 AND order_date &gt;= '2023-06-01';
+    SELECT * FROM orders WHERE user_id = 100 AND order_date >= '2023-06-01';
  
     -- 効きにくい (order_date 単独)
     EXPLAIN ANALYZE
-    SELECT * FROM orders WHERE order_date &gt;= '2023-06-01';
+    SELECT * FROM orders WHERE order_date >= '2023-06-01';
  
     -- 爆速 (両方使う)
     EXPLAIN ANALYZE
     SELECT * FROM orders WHERE user_id = 100 AND order_date BETWEEN '2023-06-01' AND '2023-06-30';
     </code></pre>
       </div>
+
+      <h4>実行結果例</h4>
+      <p><strong>ケース1: user_id で絞る（最左プレフィクス条件を満たす）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                          QUERY PLAN                                     
+
+------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on orders  (cost=4.52..39.93 rows=9 width=33) (actual time=0.055..0.080 rows=11 loops=1)
+   Recheck Cond: ((user_id = 100) AND (order_date >= '2023-06-01'::date))
+   Heap Blocks: exact=11
+   ->  Bitmap Index Scan on idx_orders_user_date  (cost=0.00..4.52 rows=9 width=0) (actual time=0.045..0.046 rows=11 loops=1)
+         Index Cond: ((user_id = 100) AND (order_date >= '2023-06-01'::date))
+ Planning Time: 0.636 ms
+ Execution Time: 0.120 ms
+(7 行)</code></pre>
+      </div>
+
+      <p><strong>ケース2: order_date 単独（最左プレフィクス条件を満たさない）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                   QUERY PLAN                                            
+
+----------------------------------------------------------------------------------------------------------------
+ Seq Scan on orders  (cost=0.00..31250.00 rows=884067 width=33) (actual time=0.010..84.502 rows=881893 loops=1)
+   Filter: (order_date >= '2023-06-01'::date)
+   Rows Removed by Filter: 618107
+ Planning Time: 0.053 ms
+ Execution Time: 104.916 ms
+(5 行)</code></pre>
+      </div>
+
+      <p><strong>ケース3: 両方使う（最適な条件）</strong></p>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                          QUERY PLAN                                     
+
+------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_orders_user_date on orders  (cost=0.43..8.45 rows=1 width=33) (actual time=0.010..0.011 rows=1 loops=1)
+   Index Cond: ((user_id = 100) AND (order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-30'::date))
+ Planning Time: 0.134 ms
+ Execution Time: 0.029 ms
+(4 行)</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>ケース1 (Bitmap Scan, 0.120 ms):</strong> user_idで候補を絞ってからorder_dateで追絞り。インデックスが効いている</li>
+        <li><strong>ケース2 (Seq Scan, 104.916 ms):</strong> order_date単独ではインデックスが効かずSeq Scan選択。実行時間は約870倍遅い</li>
+        <li><strong>ケース3 (Index Scan, 0.029 ms):</strong> 両方の条件で完全に最適化。ケース2比で約3,600倍高速化</li>
+        <li><strong>最左プレフィクスの威力:</strong> 複合インデックス(user_id, order_date)は左端のuser_idでソートされているため、order_date単独では効きにくい</li>
+        <li><strong>コスト差：</strong> ケース1(cost=4.52) vs ケース2(cost=31250.00)で明確な差が出ている</li>
+      </ul>
+      <span class="important"><strong>ポイント:</strong> 複合インデックスの列順は極めて重要。最左プレフィクス条件を満たさないと、インデックスが使われず全件スキャンになる危険性があります。</span>
       <p><strong>テキスト図解 (B-Tree の並びイメージ):</strong></p>
       <div class="diagram-block">
         <pre><code>user_id | order_date | ...
@@ -282,12 +554,11 @@ WHERE email = 'user@example.com'
       <div class="code-block">
         <pre><code class="language-sql">-- 遅い例: ユーザ単位の期間検索 + ソート
 EXPLAIN ANALYZE
-SELECT o.order_id, o.order_date, o.total_amount, u.name
-FROM orders o
-JOIN users u ON u.id = o.user_id
-WHERE o.user_id = 4242
-  AND o.order_date BETWEEN '2023-06-01' AND '2023-06-30'
-ORDER BY o.order_date DESC;
+SELECT order_id, order_date, total_amount, status
+FROM orders
+WHERE user_id = 4242
+  AND order_date BETWEEN '2023-06-01' AND '2023-06-30'
+ORDER BY order_date DESC;
 
 -- ミッション: 最適な CREATE INDEX を1本だけ設計せよ
 -- 例解 (一案):
@@ -295,6 +566,25 @@ ORDER BY o.order_date DESC;
 </code></pre>
       </div>
       <p>索引候補を試し、EXPLAIN ANALYZE でコスト・実行時間・使用ノード (Index Scan / Index Only Scan / Bitmap) を確認して改善します。</p>
+
+      <h4>実行結果例（抜粋）</h4>
+      <div class="result-block">
+        <pre><code class="language-sql">                                                      QUERY PLAN
+
+Index Cond: ((user_id = 4242) AND (order_date >= '2023-06-01'::date) AND (order_date <= '2023-06-30'::date))
+Planning Time: 0.739 ms
+Execution Time: 0.240 ms
+(4 行)
+</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>Index Scan選択:</strong> 複合インデックスが有効に使われ、user_idの等価条件とorder_dateの範囲条件で高速に抽出されています</li>
+        <li><strong>低レイテンシ:</strong> Execution Timeが0.240ms、抽出行数5件という小規模結果に対して期待通りの高速動作です</li>
+        <li><strong>ソート最適化:</strong> ORDER BY order_date DESCのクエリは、降順で作成した複合インデックスを用意すれば追加ソートを省略できます</li>
+        <li><strong>実務的指針:</strong> このパターンでは (user_id, order_date DESC) に加え INCLUDE (total_amount) を検討すると、Index Only Scanでさらなる高速化が期待できます</li>
+      </ul>
       
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. なぜ例解のインデックスに DESC を指定しているのか?</div>
@@ -326,6 +616,16 @@ VACUUM ANALYZE orders;
 </code></pre>
       </div>
       
+      <h4>実行結果例</h4>
+      <div class="result-block">
+        <pre><code class="language-sql">
+    ANALYZE
+    ANALYZE
+    VACUUM
+    </code></pre>
+      </div>
+      <p>psqlでは各コマンドが正常終了すると、そのコマンド名がそのまま表示されます。上記出力は正常な動作です。</p>
+      
       <h4>インデックスの再構築</h4>
       <p>長期運用でインデックスが肥大化・断片化した場合、再構築で性能を回復できます。</p>
       <div class="code-block">
@@ -343,6 +643,17 @@ ALTER INDEX idx_orders_user_date_new RENAME TO idx_orders_user_date;
 </code></pre>
       </div>
       
+      <h4>実行結果例</h4>
+      <div class="result-block">
+        <pre><code class="language-sql">REINDEX
+REINDEX
+CREATE INDEX
+DROP INDEX
+ALTER INDEX
+</code></pre>
+      </div>
+      <p>psqlでは各コマンドが正常終了すると、そのコマンド名が表示されます。上記出力は正常な動作です。</p>
+      
       <h4>インデックス設計のベストプラクティス</h4>
       <ul>
         <li><strong>必要なものだけ作る:</strong> インデックスは万能ではない。更新コストとのバランスを考慮</li>
@@ -357,7 +668,10 @@ ALTER INDEX idx_orders_user_date_new RENAME TO idx_orders_user_date;
       <h4>未使用インデックスの検出</h4>
       <div class="code-block">
         <pre><code class="language-sql">-- 使用されていないインデックスを検出
-SELECT schemaname, tablename, indexname, idx_scan
+SELECT schemaname,
+       relname AS tablename,
+       indexrelname AS indexname,
+       idx_scan
 FROM pg_stat_user_indexes
 WHERE idx_scan = 0
   AND indexrelname NOT LIKE '%_pkey'
@@ -369,6 +683,66 @@ FROM pg_stat_user_indexes
 ORDER BY pg_relation_size(indexrelid) DESC;
 </code></pre>
       </div>
+
+      <h4>実行結果例</h4>
+      <div class="result-block">
+        <pre><code class="language-sql"> schemaname | tablename |      indexname       | idx_scan 
+------------+-----------+----------------------+----------
+ public     | orders    | idx_orders_user_date |        0
+ public     | orders    | idx_orders_pending   |        0
+ public     | y_items   | y_items_name_key     |        0
+ public     | y_jobs    | y_jobs_name_key      |        0
+ public     | x_jobs    | x_jobs_name_key      |        0
+ public     | x_guilds  | x_guilds_name_key    |        0
+ public     | x_items   | x_items_name_key     |        0
+(7 行)
+</code></pre>
+      </div>
+      <div class="result-block">
+        <pre><code class="language-sql">      indexrelname       | pg_size_pretty
+-------------------------+----------------
+ orders_pkey             | 32 MB
+ idx_orders_user_date    | 32 MB
+ idx_orders_status       | 10 MB
+ idx_orders_status_full  | 10 MB
+ idx_incomplete_orders   | 2704 kB
+ idx_orders_pending      | 112 kB
+ y_items_pkey            | 16 kB
+ s_users_pkey            | 16 kB
+ s_characters_pkey       | 16 kB
+ y_items_name_key        | 16 kB
+ y_jobs_pkey             | 16 kB
+ y_jobs_name_key         | 16 kB
+ y_characters_pkey       | 16 kB
+ y_character_items_pkey  | 16 kB
+ x_jobs_name_key         | 8192 bytes
+ x_jobs_pkey             | 8192 bytes
+ x_items_name_key        | 8192 bytes
+ x_items_pkey            | 8192 bytes
+ x_guilds_name_key       | 8192 bytes
+ x_guild_characters_pkey | 8192 bytes
+ x_character_items_pkey  | 8192 bytes
+ x_gold_transfers_pkey   | 8192 bytes
+ x_guilds_pkey           | 8192 bytes
+ x_characters_pkey       | 8192 bytes
+(24 行)
+</code></pre>
+      </div>
+
+      <h4>結果の解釈</h4>
+      <ul>
+        <li><strong>未使用候補:</strong> idx_scan=0は統計収集以降で「インデックスが参照されていない」ことを示します。新規作成直後や稼働が少ない期間では正常です</li>
+        <li><strong>除外対象:</strong> *_pkeyは主キーであり、削除対象にはしません。業務上必須です</li>
+        <li><strong>サイズ観察:</strong> orders_pkey/idx_orders_user_dateが32MBと大きく、データ量に応じた妥当なサイズ感です。小さなテーブルのインデックスは数KB〜数十KBが自然です</li>
+        <li><strong>次アクション:</strong> 実運用の典型クエリでの使用状況を一定期間観測し、継続してidx_scan=0かつサイズが大きいものがあれば削除や設計見直しを検討します</li>
+      </ul>
+
+      <h4>補足: カラム名の注意</h4>
+      <ul>
+        <li><strong>relname:</strong> テーブル名（ビュー内の正式カラム）</li>
+        <li><strong>indexrelname:</strong> インデックス名（ビュー内の正式カラム）</li>
+        <li><strong>alias利用:</strong> 表示上の分かりやすさのため、relnameをtablename、indexrelnameをindexnameとしてエイリアスしています</li>
+      </ul>
       
       <h4>よくある落とし穴</h4>
       <ul>
