@@ -160,6 +160,102 @@ SELECT * FROM orders WHERE order_id = 424242;
         <li><strong>Execution Time:</strong> 実際のクエリ実行時間</li>
       </ul>
       <span class="important"><strong>重要:</strong> costは推定値、actual timeが実測値です。両者に大きな乖離がある場合、統計情報の更新（ANALYZE）が必要かもしれません。</span>
+      
+      <p><strong>SQLドリル:</strong> 以下のクエリの実行計画を読み解き、どのようにインデックスが使われているか説明してみよう。</p>
+      <div class="quiz-question" onclick="toggleAnswer(this)">SQLドリルの解答例を表示</div>
+      <div class="quiz-answer">このドリルでは、複数の検索パターンで実行計画を比較し、インデックスの使用状況を観察します。
+        <div class="code-block">
+          <pre><code class="language-sql">-- パターン1: 主キーによる検索（最速）
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE order_id = 100000;
+
+-- パターン2: 範囲検索（主キー）
+EXPLAIN ANALYZE
+SELECT COUNT(*) FROM orders WHERE order_id BETWEEN 1 AND 10000;
+
+-- パターン3: インデックスがない列での検索
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE total_amount > 40000;
+
+-- パターン4: 集計関数とインデックス
+EXPLAIN ANALYZE
+SELECT MAX(order_id), MIN(order_id) FROM orders;
+</code></pre>
+        </div>
+        <p><strong>観察ポイント</strong></p>
+        <ul>
+          <li><strong>パターン1:</strong> Index Scan using orders_pkey が選ばれ、cost/actual timeが非常に小さい（~0.01ms）</li>
+          <li><strong>パターン2:</strong> Index Only Scanが選ばれる可能性が高い。COUNT(*)はインデックスだけで計算可能</li>
+          <li><strong>パターン3:</strong> total_amountにインデックスがないため、Seq Scanになり実行時間が長い（数百ms）</li>
+          <li><strong>パターン4:</strong> MAX/MINは主キーインデックスを使って瞬時に計算される（Result + Index Only Scan）</li>
+        </ul>
+        <p>実行計画を見る際は、①どのスキャン方式が選ばれたか、②costと実測時間の関係、③rows推定と実際の行数の乖離に注目しましょう。</p>
+        
+        <p><strong>実行結果例（正常動作）</strong></p>
+        <p><strong>パターン1: 主キーによる検索（最速）</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                     QUERY PLAN                                          
+
+---------------------------------------------------------------------------------------------------------------------
+ Index Scan using orders_pkey on orders  (cost=0.43..8.45 rows=1 width=33) (actual time=2.402..2.405 rows=1 loops=1)
+   Index Cond: (order_id = 100000)
+ Planning Time: 7.798 ms
+ Execution Time: 3.416 ms
+(4 行)</code></pre>
+        </div>
+        <p><strong>パターン2: 範囲検索（主キー）+ COUNT</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                               QUERY PLAN                                
+
+----------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=327.58..327.59 rows=1 width=8) (actual time=4.841..4.842 rows=1 loops=1)
+   ->  Index Only Scan using orders_pkey on orders  (cost=0.43..303.23 rows=9740 width=0) (actual time=0.041..4.480 rows=10000 loops=1)
+         Index Cond: ((order_id >= 1) AND (order_id <= 10000))
+         Heap Fetches: 0
+ Planning Time: 0.985 ms
+ Execution Time: 4.911 ms
+(6 行)</code></pre>
+        </div>
+        <p><strong>パターン3: インデックスなし列での検索</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                   QUERY PLAN                                            
+
+-----------------------------------------------------------------------------------------------------------------
+ Seq Scan on orders  (cost=0.00..31250.00 rows=295579 width=33) (actual time=0.151..581.529 rows=299946 loops=1)
+   Filter: (total_amount > '40000'::numeric)
+   Rows Removed by Filter: 1200054
+ Planning Time: 1.360 ms
+ Execution Time: 592.776 ms
+(5 行)</code></pre>
+        </div>
+        <p><strong>パターン4: 集計関数とインデックス（MAX/MIN）</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                        QUERY PLAN                       
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Result  (cost=0.91..0.92 rows=1 width=16) (actual time=1.936..1.938 rows=1 loops=1)
+   InitPlan 1
+     ->  Limit  (cost=0.43..0.45 rows=1 width=8) (actual time=1.907..1.908 rows=1 loops=1)
+           ->  Index Only Scan Backward using orders_pkey on orders  (cost=0.43..38964.43 rows=1500000 width=8) (actual time=1.906..1.906 rows=1 loops=1)
+                 Heap Fetches: 0
+   InitPlan 2
+     ->  Limit  (cost=0.43..0.45 rows=1 width=8) (actual time=0.023..0.023 rows=1 loops=1)
+           ->  Index Only Scan using orders_pkey on orders orders_1  (cost=0.43..38964.43 rows=1500000 width=8) (actual time=0.022..0.022 rows=1 loops=1)
+                 Heap Fetches: 0
+ Planning Time: 0.287 ms
+ Execution Time: 1.958 ms
+(11 行)</code></pre>
+        </div>
+        
+        <p><strong>結果の解釈</strong></p>
+        <ul>
+          <li><strong>パターン1:</strong> order_id=100000 という1行の検索が 3.4ms で完了。主キーインデックスが最適に機能</li>
+          <li><strong>パターン2:</strong> Index Only Scan で 10,000行を集計。Heap Fetches: 0 は「テーブル本体に一度もアクセスしていない」ことを示す完璧な実行計画</li>
+          <li><strong>パターン3:</strong> total_amount にインデックスがないため Seq Scan が選ばれ、150万行中約30万行にヒット。実行時間は 592ms と長い</li>
+          <li><strong>パターン4:</strong> MAX/MIN は「インデックスの両端の値」を取得するだけなので、わずか1行のスキャンで完了。1.9ms は極めて高速</li>
+          <li><strong>重要な発見:</strong> パターン1と2の「数ms」対パターン3の「数百ms」を比較すると、インデックスの有無で実行時間が100倍以上変わることが実証される</li>
+        </ul>
+      </div>
     </section>
 
     <section class="fes-section">
@@ -449,6 +545,104 @@ WHERE user_id = 1000
       
       <div class="quiz-question" onclick="toggleAnswer(this)">Q2. 部分インデックス使用時の注意点は?</div>
       <div class="quiz-answer">クエリのWHERE句にインデックス作成時と同じ条件を含める必要があります。例えば WHERE status = 'pending' で部分インデックスを作った場合、クエリにもこの条件が必要です。条件が一致しないとインデックスは使われません。</div>
+      
+      <p><strong>SQLドリル:</strong> 以下のシナリオに最適な部分インデックスを設計してみよう。</p>
+      <p><strong>シナリオ: 未完了注文だけを頻繁に検索・分析する</strong></p>
+      <div class="quiz-question" onclick="toggleAnswer(this)">SQLドリルの解答例を表示</div>
+      <div class="quiz-answer">
+      
+      <p>完了済み注文（completed）は分析対象外で、pending と cancelled だけを索引対象にしたい場合。全体150万件のうち、未完了は約15万件（10%）に限定されます。</p>
+        <div class="code-block">
+          <pre><code class="language-sql">-- 解答例: 未完了注文だけに絞った部分インデックス
+-- ポイント: 完了済み注文（90%）を除外し、インデックスサイズを1/10に削減
+CREATE INDEX idx_orders_incomplete ON orders(order_date DESC, user_id)
+  WHERE status IN ('pending', 'cancelled');
+
+-- 活用例1a: 未完了注文を日付順に取得
+EXPLAIN ANALYZE
+SELECT * FROM orders
+WHERE status IN ('pending', 'cancelled')
+  AND order_date >= '2023-06-01'
+ORDER BY order_date DESC;
+
+-- 活用例1b: ユーザー別の未完了件数ランキング
+EXPLAIN ANALYZE
+SELECT 
+  user_id,
+  COUNT(*) as incomplete_count
+FROM orders
+WHERE status IN ('pending', 'cancelled')
+GROUP BY user_id
+ORDER BY incomplete_count DESC
+LIMIT 20;
+
+-- インデックスサイズの比較
+SELECT 
+  indexrelname,
+  pg_size_pretty(pg_relation_size(indexrelid)) as size
+FROM pg_stat_user_indexes
+WHERE relname = 'orders'
+ORDER BY pg_relation_size(indexrelid) DESC;
+</code></pre>
+        </div>
+        
+        <p><strong>実行結果例（正常動作）</strong></p>
+        <p><strong>活用例1b: ユーザー別の未完了件数</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                            QUERY PLAN                   
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7190.23..7190.28 rows=20 width=12) (actual time=48.021..48.025 rows=20 loops=1)
+   ->  Sort  (cost=7190.23..7383.27 rows=77215 width=12) (actual time=48.018..48.020 rows=20 loops=1)    
+         Sort Key: (count(*)) DESC
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  GroupAggregate  (cost=0.42..5135.57 rows=77215 width=12) (actual time=1.326..42.351 rows=77745 loops=1)
+               Group Key: user_id
+               ->  Index Only Scan using idx_incomplete_orders on orders  (cost=0.42..3610.67 rows=150550 width=4) (actual time=1.317..26.261 rows=150600 loops=1)
+                     Heap Fetches: 0
+ Planning Time: 0.303 ms
+ Execution Time: 48.066 ms
+(10 行)</code></pre>
+        </div>
+        
+        <p><strong>インデックスサイズ比較</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">      indexrelname      |  size
+------------------------+---------
+ orders_pkey            | 32 MB
+ idx_orders_user_date   | 32 MB
+ idx_orders_status      | 10 MB
+ idx_orders_status_full | 10 MB
+ idx_orders_order_date  | 10 MB
+ idx_orders_incomplete  | 3328 kB
+ idx_incomplete_orders  | 2704 kB
+ idx_orders_pending     | 112 kB
+(8 行)</code></pre>
+        </div>
+        
+        <p><strong>結果の解釈</strong></p>
+        <ul>
+          <li><strong>Index Only Scan で 150,600 行を処理:</strong> Heap Fetches: 0 は、テーブル本体に一度もアクセスせずインデックスだけで完結したことを示す。完璧な実行計画</li>
+          <li><strong>実行時間 48.066 ms:</strong> 150,000 件以上のグループ化＆ソートにしては高速。通常インデックスだと処理行数が 150万件になるため大幅に遅い</li>
+          <li><strong>メモリ効率:</strong> top-N heapsort で 26kB しか使用。ORDER BY DESC LIMIT 20 により、効率的なソート実装</li>
+          <li><strong>インデックスサイズの劇的な削減:</strong></li>
+          <ul>
+            <li><strong>通常インデックス（idx_orders_status）:</strong> 10 MB（全 150 万件対象）</li>
+            <li><strong>部分インデックス（idx_incomplete_orders）:</strong> 2704 kB（150,600 件のみ対象）</li>
+            <li><strong>削減率:</strong> 73% 削減。ストレージとメモリ効率が大幅に向上</li>
+          </ul>
+          <li><strong>スケーラビリティ:</strong> データが増えても、部分インデックスサイズの増加は「未完了件数の増加」だけ。completed レコードの増加は無関係</li>
+        </ul>
+        
+        <p><strong>設計のポイント</strong></p>
+        <ul>
+          <li><strong>IMMUTABLE な条件のみ使用:</strong> 部分インデックスの WHERE 句には <strong>固定値の比較</strong>（=, IN, >, <）のみ使用可能。CURRENT_DATE、NOW() などの volatile 関数は使えません</li>
+          <li><strong>実用的な部分インデックス:</strong> status = 'pending'、is_deleted = false など、比較的固定値で絞る場合に効果的</li>
+          <li><strong>複合列の活用:</strong> (order_date DESC, user_id) で検索とソートの両方に対応</li>
+          <li><strong>更新効率:</strong> completed データへの更新はインデックスを触らないため、書き込み性能向上</li>
+          <li><strong>WHERE句の必須条件:</strong> クエリに「status IN ('pending', 'cancelled')」を含める必要があります</li>
+        </ul>
+        </div>
     </section>
 
     <section class="fes-section">
@@ -545,6 +739,121 @@ WHERE user_id = 1000
       
       <div class="quiz-question" onclick="toggleAnswer(this)">Q3. (user_id, order_date) と (order_date, user_id) の違いは?</div>
       <div class="quiz-answer">根本的に異なるインデックスです。前者はuser_id→order_dateの順でソート、後者はorder_date→user_idの順でソート。WHERE user_id = X には前者が、WHERE order_date = Y には後者が効きます。クエリパターンに応じて適切な順序を選ぶ必要があります。</div>
+      
+      <p><strong>SQLドリル:</strong> 以下の3つのクエリパターンに最も効率的な複合インデックスを1つだけ設計してみよう。</p>
+      
+      <p><strong>クエリパターン（頻度順）:</strong></p>
+      <ol>
+        <li>特定ユーザーの直近注文（頻度: 高）</li>
+        <li>特定ステータスの注文を日付順に取得（頻度: 中）</li>
+        <li>特定ユーザーの特定ステータス注文（頻度: 低）</li>
+      </ol>
+      
+      <div class="quiz-question" onclick="toggleAnswer(this)">SQLドリルの解答例を表示</div>
+      <div class="quiz-answer">
+        <div class="code-block">
+          <pre><code class="language-sql">-- 最も頻度の高いパターン1に最適化したインデックス
+CREATE INDEX idx_orders_user_date_status ON orders(user_id, order_date DESC, status);
+
+-- パターン1: 特定ユーザーの直近注文（最優先）
+EXPLAIN ANALYZE
+SELECT * FROM orders
+WHERE user_id = 5000
+ORDER BY order_date DESC
+LIMIT 10;
+
+-- パターン2: 特定ステータスの注文を日付順
+-- 注意: このパターンではインデックスが効きにくい（user_idが左端のため）
+EXPLAIN ANALYZE
+SELECT * FROM orders
+WHERE status = 'pending'
+ORDER BY order_date DESC
+LIMIT 20;
+
+-- パターン3: 特定ユーザーの特定ステータス
+EXPLAIN ANALYZE
+SELECT * FROM orders
+WHERE user_id = 5000
+  AND status = 'completed'
+ORDER BY order_date DESC;
+
+-- 代替案: パターン2にも対応するには別のインデックスが必要
+-- CREATE INDEX idx_orders_status_date ON orders(status, order_date DESC);
+</code></pre>
+        </div>
+        
+        <p><strong>実行結果例（正常動作）</strong></p>
+        
+        <p><strong>パターン1: 特定ユーザーの直近注文（最優先）</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">CREATE INDEX
+
+                                                                  QUERY PLAN                             
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.43..43.10 rows=10 width=33) (actual time=0.166..0.195 rows=10 loops=1)
+   ->  Index Scan using idx_orders_user_date_status on orders  (cost=0.43..68.70 rows=16 width=33) (actual time=0.164..0.192 rows=10 loops=1)
+         Index Cond: (user_id = 5000)
+ Planning Time: 5.038 ms
+ Execution Time: 0.801 ms
+(5 行)</code></pre>
+        </div>
+        
+        <p><strong>パターン2: 特定ステータスの注文を日付順</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                     QUERY PLAN                          
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.29..52.15 rows=20 width=33) (actual time=0.009..0.072 rows=20 loops=1)
+   ->  Index Scan Backward using idx_orders_pending on orders  (cost=0.29..35916.01 rows=13850 width=33) (actual time=0.009..0.070 rows=20 loops=1)
+ Planning Time: 0.158 ms
+ Execution Time: 0.081 ms
+(4 行)</code></pre>
+        </div>
+        
+        <p><strong>パターン3: 特定ユーザーの特定ステータス注文</strong></p>
+        <div class="result-block">
+          <pre><code class="language-sql">                                                                 QUERY PLAN                              
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=59.66..59.70 rows=14 width=33) (actual time=0.067..0.069 rows=19 loops=1)
+   Sort Key: order_date DESC
+   Sort Method: quicksort  Memory: 26kB
+   ->  Bitmap Heap Scan on orders  (cost=4.59..59.40 rows=14 width=33) (actual time=0.017..0.061 rows=19 loops=1)
+         Recheck Cond: ((user_id = 5000) AND (status = 'completed'::text))
+         Heap Blocks: exact=19
+         ->  Bitmap Index Scan on idx_orders_user_date_status  (cost=0.00..4.59 rows=14 width=0) (actual time=0.011..0.012 rows=19 loops=1)
+               Index Cond: ((user_id = 5000) AND (status = 'completed'::text))
+ Planning Time: 0.074 ms
+ Execution Time: 0.081 ms
+(10 行)</code></pre>
+        </div>
+        
+        <p><strong>結果の解釈</strong></p>
+        <ul>
+          <li><strong>パターン1 (0.801ms):</strong> Index Scan で user_id で絞った後、order_date DESC でソート。LIMIT 10 で瞬時に完了。インデックスが完璧に機能</li>
+          <li><strong>パターン2 (0.081ms):</strong> 別のインデックス（idx_orders_pending）が使われた。Backward Scan で降順ソートを効率化。超高速</li>
+          <li><strong>パターン3 (0.081ms):</strong> Bitmap Heap Scan で user_id と status で絞った後、Sort で order_date DESC にソート。わずかなソート処理だけで高速</li>
+          <li><strong>全パターンがミリ秒単位:</strong> インデックス設計が機能している証拠。すべてのクエリが 1ms 以下で完了</li>
+        </ul>
+        
+        <p><strong>設計の考え方</strong></p>
+        <ul>
+          <li><strong>頻度を優先:</strong> 最も頻繁なパターン1を完全に最適化</li>
+          <li><strong>列の順序:</strong> user_id（等価条件）→ order_date（範囲＋ソート）→ status（フィルタ）</li>
+          <li><strong>DESC指定:</strong> ORDER BY order_date DESC に対応し、ソート処理を省略</li>
+          <li><strong>パターン3も恩恵:</strong> user_id で絞った後、order_date でソート、status でフィルタが効率的</li>
+          <li><strong>トレードオフ:</strong> パターン2はこのインデックスでは効きにくい。しかし頻度が低ければ許容。必要に応じて別インデックスを追加</li>
+        </ul>
+        
+        <p><strong>実務的指針</strong></p>
+        <ul>
+          <li>複数のクエリパターンがある場合、①頻度の高いものを優先、②すべてに対応しようとして過剰にインデックスを作らない</li>
+          <li>pg_stat_statements で実際の頻度を計測し、本当に必要なインデックスだけを追加</li>
+          <li>パターン2 のような「別の軸でのクエリ」が頻発する場合は、(status, order_date DESC) の追加インデックスも検討</li>
+          <li>ただし「すべてのクエリを最適化」より「メインとなるクエリを最優先」する方が実用的</li>
+        </ul>
+      </div>
     </section>
 
     <section class="fes-section">
