@@ -26,14 +26,27 @@
         <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
         <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
         <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
-        <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
+        <li>
+          <a href="sql.html" onclick="toggleMenu()">SQL解説</a>
+          <ul style="list-style: none; padding-left: 20px; margin-top: 5px;">
+            <li><a href="#section-intro" onclick="toggleMenu()">・ ガイド概要</a></li>
+            <li><a href="#section-1" onclick="toggleMenu()">・ 第1部 準備編</a></li>
+            <li><a href="#section-2" onclick="toggleMenu()">・ 第2部 基礎編</a></li>
+            <li><a href="#section-3" onclick="toggleMenu()">・ 第3部 応用編</a></li>
+            <li><a href="#section-3-5" onclick="toggleMenu()">・ 第3.5部 実践編</a></li>
+            <li><a href="#section-4" onclick="toggleMenu()">・ 第4部 発展編</a></li>
+            <li><a href="#section-5" onclick="toggleMenu()">・ 第5部 総合演習</a></li>
+            <li><a href="#section-6" onclick="toggleMenu()">・ 第6部 運用編</a></li>
+            <li><a href="#section-summary" onclick="toggleMenu()">・ まとめ</a></li>
+          </ul>
+        </li>
         <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
       </ul>
     </nav>
 
     <h2>遅いクエリを救え！ PostgreSQL 17 で学ぶインデックス設計と実行計画の解読法</h2>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-intro">
       <h3>ガイド概要</h3>
       <p><strong>学習時間の目安:</strong> 90分〜120分</p>
       <p>題材は架空の「ECサイトの大規模注文データ (100万件〜)」。データ量をしっかり用意し、PostgreSQL 17 の実行計画を読み解きながらインデックス設計の勘所を学びます。</p>
@@ -58,7 +71,7 @@
       <p>本ガイドでは、単にインデックスの作り方を覚えるのではなく、PostgreSQLがどのようにインデックスを使うか（または使わないか）を理解し、実際の業務で「なぜ遅いのか」「どう改善すべきか」を判断できる力を養います。EXPLAIN ANALYZEを使った実行計画の読み方、カーディナリティと選択率の概念、複合インデックスの設計戦略など、実践的なスキルを段階的に習得します。</p>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-1">
       <h3>第1部 準備編: 戦うためのデータを揃える </h3>
       <p>インデックスの効果はデータ量があってこそ。数件ではシーケンシャルスキャンの方が速く、差が見えません。偏りを持たせたダミーデータを生成し、後の実験の伏線にします。</p>
       <ol>
@@ -98,7 +111,7 @@ FROM generate_series(1, 1500000);
       <div class="quiz-answer">指定した範囲（この場合は1～1500000）の連続した数値を生成する関数。大量のダミーデータを効率的に作成するために使用します。</div>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-2">
       <h3>第2部 基礎編: B-Treeインデックスの威力とコスト </h3>
       <p>まずは王道の等価検索で、シーケンシャルスキャンとインデックススキャンの速度差を体験します。計算量は $O(N)$ vs $O(\log N)$。</p>
       <h4>実験1: 干し草の山から針を探す</h4>
@@ -258,7 +271,7 @@ SELECT MAX(order_id), MIN(order_id) FROM orders;
       </div>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-3">
       <h3>第3部 応用編: インデックスが「使われない」謎を解く </h3>
       <p>インデックスを作ったのに遅い——よくあるトラブルを再現し、カーディナリティと選択率 (Selectivity) の境界を探ります。</p>
       <h4>実験2: カーディナリティと選択率</h4>
@@ -420,7 +433,7 @@ ANALYZE</code></pre>
       <div class="quiz-answer">①統計情報を更新（ANALYZE）、②WHERE句の条件を見直し選択率を下げる、③部分インデックスを検討、④クエリヒントでIndex Scanを強制（本番非推奨）などがあります。ただし多くの場合、PostgreSQLの判断は正しいため、無理にインデックスを使わせる必要はありません。</div>
       <span class="important"><strong>ポイント:</strong> インデックスを「使わせる」ことより、「PostgreSQLが正しく判断できる環境を作る」ことが大切です。</span>    </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-3-5">
       <h3>第3.5部 実践編: 部分インデックスと条件付きインデックス </h3>
       <p>インデックスのサイズを削減し、更新性能を維持しながら検索を高速化する「部分インデックス」を学びます。</p>
       
@@ -645,7 +658,7 @@ ORDER BY pg_relation_size(indexrelid) DESC;
         </div>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-4">
       <h3>第4部 発展編: 複合インデックスと最左プレフィクス </h3>
       <p>複数列の B-Tree では「左から順に並ぶ」ため、列の並び順が性能を左右します。</p>
       <h4>実験3: 複合インデックスの順序</h4>
@@ -856,7 +869,7 @@ ORDER BY order_date DESC;
       </div>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-5">
       <h3>第5部 総合演習: スロークエリ・チューニング </h3>
       <p>講師が用意した「遅い検索クエリ」を最適化し、2秒 → 0.05秒未満を目指します。インデックスは1つだけ作成可。</p>
       <h4>遅いクエリ例と改善ミッション</h4>
@@ -907,7 +920,7 @@ Execution Time: 0.240 ms
       <div class="quiz-answer">Index Scanはインデックスで行を特定した後、テーブル本体からデータを取得します。Index Only Scanはインデックスだけで全データを取得できるため、テーブルアクセスが不要で高速です。INCLUDEやカバリングインデックスでIndex Only Scanを実現できます。</div>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-6">
       <h3>第6部 運用編: インデックスのメンテナンスとベストプラクティス </h3>
       <p>インデックスは作って終わりではありません。適切な運用とメンテナンスが継続的な性能維持に不可欠です。</p>
       
@@ -1074,7 +1087,7 @@ ORDER BY pg_relation_size(indexrelid) DESC;
       <span class="warning"><strong>本番環境への注意:</strong> 本番環境でのインデックス作成は必ずCONCURRENTLYオプションを使用し、テーブルロックを避けましょう。</span>
     </section>
 
-    <section class="fes-section">
+    <section class="fes-section" id="section-summary">
       <h3>まとめと次のステップ</h3>
       <p>このガイドで学んだインデックス設計の基礎を、実際のプロジェクトで活用してみましょう。</p>
       
