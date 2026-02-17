@@ -8,6 +8,23 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    <style>
+      .code-block{position:relative;padding-top:44px}
+      .code-block .exercise-hidden { display: none; }
+      .code-toggle-btn{position:absolute;top:8px;right:96px;padding:6px 10px;background:#1976d2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.9rem;z-index:50;white-space:nowrap}
+      .copy-btn{
+        position:absolute;top:8px;right:8px;padding:6px 8px;background:#444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.9rem;z-index:40;box-sizing:border-box;width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+      }
+      @media (max-width:480px){
+        /* on narrow screens, avoid right-edge clipping by swapping positions */
+        .code-toggle-btn{right:8px}
+        .copy-btn{right:96px}
+      }
+      .copy-btn:active{transform:translateY(1px)}
+      .copy-btn.copied{background:#2e7d32}
+      .quiz-answer{display:none;white-space:pre-wrap}
+      .quiz-answer.show{display:block}
+    </style>
   </head>
   <body>
     <div class="menu-icon" onclick="toggleMenu()">
@@ -20,15 +37,23 @@
 
     <nav class="navigation" id="navigation">
       <ul>
-        <li><a href="index.html" onclick="toggleMenu()">Home</a></li>
         <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
         <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="fes.html" onclick="toggleMenu()">高専祭</a></li>
+        <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
         <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
         <li><a href="sql_ad.html" onclick="toggleMenu()">同時実行制御</a></li>
+        <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
       </ul>
     </nav>
 
     <h2>同時実行制御（Concurrency Control） — 90分ハンズオン</h2>
+
+    <section class="fes-section" id="what-is-concurrency">
+      <h3>同時実行制御とは何か</h3>
+      <p>同時実行制御は、複数のトランザクションが同時にデータベースへアクセスする際に、データの整合性を保ちつつ効率的に処理を行うための仕組みです。隔離レベル（Isolation）、ロック（Lock）、トランザクションの境界（BEGIN/COMMIT）などを組み合わせて、Dirty Read、Lost Update、Non‑repeatable Read、Phantom Read といった問題を防ぎます。実務では「一貫性」と「スループット（同時実行性）」のトレードオフを理解して、適切な手法を選ぶことが重要です。</p>
+      <p>この教材では「実験 → 謎解き → 解説」の流れで、隔離レベルやロック、デッドロックの検出などを実際に体験しながら学びます。</p>
+    </section>
 
     <section class="fes-section" id="intro">
       <h3>導入：嵐の中の銀行口座（10分）</h3>
@@ -58,6 +83,17 @@ INSERT INTO accounts (name, balance) VALUES ('A', 5000), ('B', 3000);
 SELECT pg_backend_pid();
 </code></pre>
       </div>
+      <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+      <div class="quiz-answer"><div class="result-block">
+        <pre><code class="language-sql">
+    CREATE TABLE
+    TRUNCATE TABLE
+    INSERT 0 2
+     pg_backend_pid 
+    ----------------
+           1076
+    (1 行)</code></pre>
+      </div></div>
     </section>
 
     <section class="fes-section" id="exp-a">
@@ -85,6 +121,22 @@ SELECT balance FROM accounts WHERE id = 1;
 </code></pre>
       </div>
       <p>解説: PostgreSQL のデフォルト隔離レベルは <strong>READ COMMITTED</strong>。未コミットの変更は他セッションからは見えません。</p>
+        <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+        <div class="quiz-answer"><div class="result-block">
+        <pre><code class="language-sql">
+    BEGIN
+    UPDATE 1
+     balance
+    ---------
+      4000
+    (1 行)
+
+    COMMIT
+     balance
+    ---------
+      4000
+    (1 行)</code></pre>
+        </div></div>
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. READ COMMITTED の特徴は何か?</div>
       <div class="quiz-answer">各クエリ実行時にコミット済みの最新データを見る。トランザクション中の別セッションの未コミット変更は見えない。</div>
@@ -121,6 +173,28 @@ SELECT SUM(balance) FROM accounts; -- そのトランザクション内では追
 </code></pre>
       </div>
       <p>解説: <strong>READ COMMITTED</strong> では別セッションのコミットが見えるが、<strong>REPEATABLE READ</strong> や <strong>SERIALIZABLE</strong> を使うと同一トランザクション内で一貫したスナップショットが保証されます（SERIALIZABLE はさらに衝突時にエラーを出す）。</p>
+      <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+      <div class="quiz-answer"><div class="result-block">
+        <pre><code class="language-sql">BEGIN
+ total_before
+--------------
+         7000
+(1 行)
+
+INSERT 0 1
+COMMIT
+ total_after
+-------------
+       11000
+(1 行)
+
+SET
+BEGIN
+  sum
+-------
+ 11000
+(1 行)</code></pre>
+      </div></div>
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. ノンリピータブルリードとは何か?</div>
       <div class="quiz-answer">同一トランザクション内で同じSELECTを2回実行したときに結果が変わる現象。READ COMMITTEDで発生しやすい。</div>
@@ -153,6 +227,18 @@ UPDATE accounts SET balance = balance - 5 WHERE id = 1; -- デッドロック検
 </code></pre>
       </div>
       <p>演習: 発生したエラーメッセージ（デッドロック検知）を確認し、どのトランザクションがロールバックされたかを説明してください。</p>
+      <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+      <div class="quiz-answer"><div class="result-block">
+        <pre><code class="language-sql">
+    TRUNCATE TABLE
+    INSERT 0 2
+    BEGIN
+    UPDATE 0
+    BEGIN
+    UPDATE 0
+    UPDATE 0
+    UPDATE 0</code></pre>
+      </div></div>
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. デッドロック検知の結果、PostgreSQLはどう処理するか?</div>
       <div class="quiz-answer">デッドロックを検出すると、どちらか一方のトランザクションを強制的にロールバックして待ちを解消する（エラーを返す）。</div>
@@ -185,12 +271,208 @@ COMMIT;
 </code></pre>
       </div>
       <p>説明: <code>SELECT ... FOR UPDATE</code> で該当行をロックしてから在庫チェックと更新を行うことで、同時更新によるオーバーセールを防ぎます。</p>
+        <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+        <div class="quiz-answer"><div class="result-block">
+          <pre><code class="language-sql">
+      CREATE TABLE
+      BEGIN
+       qty
+      -----
+      (0 行)
+
+      UPDATE 0
+      COMMIT</code></pre>
+        </div></div>
       <h4>定着確認</h4>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q1. なぜ <code>SELECT ... FOR UPDATE</code> が有効なのか?</div>
       <div class="quiz-answer">当該行を排他ロックすることで、他トランザクションが同じ行を更新できなくし、チェック→更新の間に競合が起きないようにするため。</div>
       <div class="quiz-question" onclick="toggleAnswer(this)">Q2. FOR UPDATE ではどのようなケースに注意するべきか?</div>
       <div class="quiz-answer">複数行をロックするとデッドロックやスループット低下の可能性があるため、必要最小限の行だけをロックする設計が重要。</div>
       <span class="important"><strong>ポイント:</strong> ロックは整合性を守るが、同時実行性を下げるトレードオフがある。必要箇所だけ使いましょう。</span>
+      
+      <h4>追加演習</h4>
+      <ol>
+        <li>
+          <strong>演習1: 競合する振込処理の再現（中）</strong>
+          <div class="code-block">
+            <pre><code class="language-sql">-- セッションA
+BEGIN;
+SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
+UPDATE accounts SET balance = balance - 1000 WHERE id = 1;
+
+-- セッションB（ほぼ同時）
+BEGIN;
+SELECT balance FROM accounts WHERE id = 1 FOR UPDATE; -- ここで待つ／またはブロックされる
+UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+-- どの順で COMMIT するとどうなるか観察する
+COMMIT;
+</code></pre>
+          </div>
+          <p>狙い: FOR UPDATE による排他制御で待ちが発生し、Lost Update を防げることを確認する。</p>
+        
+        <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+        <div class="quiz-answer"><div class="result-block">
+          <pre><code class="language-sql">BEGIN
+       balance
+      ---------
+      (0 行)
+
+      UPDATE 0
+      BEGIN
+       balance
+      ---------
+      (0 行)
+
+      UPDATE 0
+      COMMIT</code></pre>
+        </div></div>
+
+        </li>
+
+        <li>
+          <strong>演習2: 楽観ロック（versionカラム）での実装（上）</strong>
+          <div class="code-block">
+            <pre><code class="language-sql">-- テーブルにバージョンカラムを追加
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS version INT DEFAULT 0;
+
+-- 更新時の実装例（アプリ側で実行）
+-- 1) SELECT balance, version FROM accounts WHERE id = 1;
+-- 2) アプリで new_balance を計算
+-- 3) UPDATE accounts SET balance = :new_balance, version = version + 1 WHERE id = 1 AND version = :old_version;
+-- 4) 更新件数が0なら競合発生としてリトライ
+</code></pre>
+          </div>
+          <p>狙い: 排他ロックを使わずに衝突検知→リトライするパターンを学ぶ。高スループット向け。</p>
+          <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+          <div class="quiz-answer"><div class="result-block">
+            <pre><code class="language-sql">ALTER TABLE</code></pre>
+          </div></div>
+        </li>
+
+        <li>
+          <strong>演習3: SERIALIZABLE とリトライ設計（上）</strong>
+          <div class="code-block">
+            <pre><code class="language-sql">-- セッションA
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
+-- 何らかの読み取り＋更新処理
+SELECT SUM(balance) FROM accounts;
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+COMMIT;
+
+-- 衝突があれば ERROR: could not serialize access と出る
+-- アプリ側はこのエラーを受けてトランザクション全体を再試行する必要がある
+</code></pre>
+          </div>
+          <p>狙い: 厳密な一貫性を確保する代わりに、衝突時のリトライが必要になることを体験する。</p>
+          <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+          <div class="quiz-answer"><div class="result-block">
+            <pre><code class="language-sql">SET
+BEGIN
+  sum
+-----
+ 300
+(1 行)
+
+UPDATE 0
+COMMIT</code></pre>
+          </div></div>
+        </li>
+
+        <li>
+          <strong>演習4: 在庫のバルク購入での整合性検査（中）</strong>
+          <div class="code-block">
+            <pre><code class="language-sql">-- シナリオ: ユーザーがカートで複数商品を同時に購入
+BEGIN;
+-- 1) 対象商品の行を FOR UPDATE でまとめてロック
+SELECT product_id, qty FROM stock WHERE product_id IN (1,2,3) FOR UPDATE;
+-- 2) すべての在庫が足りるかチェックし、足りればUPDATEを実行
+-- 注意: `:amount` のようなプレースホルダをそのまま psql に投げると構文エラーになります。
+-- 方法A: psql の変数機能を使う例（psql 上で値をセットしてから実行）
+-- \set amount 2
+-- \set id 1
+-- UPDATE stock SET qty = qty - :amount WHERE product_id = :id AND qty >= :amount;
+
+-- 方法B: アプリやプリペアドステートメントでパラメータ化する例（サーバ側で安全に実行）
+-- PREPARE purchase(INT, INT) AS
+--   UPDATE stock SET qty = qty - $2 WHERE product_id = $1 AND qty >= $2;
+-- EXECUTE purchase(1, 2);
+-- DEALLOCATE purchase;
+COMMIT;
+</code></pre>
+          </div>
+          <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+          <div class="quiz-answer"><div class="result-block">
+            <pre><code class="language-sql">
+BEGIN
+ product_id | qty
+------------+-----
+(0 行)
+
+COMMIT</code></pre>
+          </div></div>
+          <p>狙い: 複数行を一括でロックする際のデッドロック回避（ロック順序の統一）の重要性を考える。</p>
+        </li>
+
+        <li>
+          <strong>演習5: 監査ログを使った不整合検出（軽）</strong>
+          <div class="code-block">
+            <pre><code class="language-sql">-- 変更履歴テーブル例
+CREATE TABLE IF NOT EXISTS accounts_audit (
+  id SERIAL PRIMARY KEY,
+  account_id INT,
+  old_balance INT,
+  new_balance INT,
+  changed_at TIMESTAMP DEFAULT now()
+);
+
+-- トランザクション内で更新と同時に監査ログを挿入
+-- 注意: `CREATE TABLE IF NOT EXISTS` は既存時に NOTICE を出しますが処理は継続され安全です。
+-- psql の `\gset` は戻り行が無い場合にエラーになります。安全に処理する例を示します。
+-- 方法A: PL/pgSQL の匿名ブロックで更新と監査を安全に行う（0行でもエラーにならない）
+DO $$
+DECLARE
+  rec RECORD;
+BEGIN
+  UPDATE accounts
+  SET balance = balance - 100
+  WHERE id = 1
+  RETURNING id AS account_id, (balance + 100) AS old_balance, balance AS new_balance
+  INTO rec;
+  IF FOUND THEN
+    INSERT INTO accounts_audit (account_id, old_balance, new_balance)
+    VALUES (rec.account_id, rec.old_balance, rec.new_balance);
+  END IF;
+END
+$$;
+
+-- 方法B: WITH を使って UPDATE の戻り値をそのまま挿入する（シンプルで安全）
+WITH upd AS (
+  UPDATE accounts
+  SET balance = balance - 100
+  WHERE id = 1
+  RETURNING id AS account_id, (balance + 100) AS old_balance, balance AS new_balance
+)
+INSERT INTO accounts_audit (account_id, old_balance, new_balance)
+SELECT account_id, old_balance, new_balance FROM upd;
+</code></pre>
+          </div>
+          <div class="quiz-question" onclick="toggleAnswer(this)"><strong>実行結果例（正常動作）を表示</strong></div>
+          <div class="quiz-answer"><div class="result-block">
+            <pre><code class="language-sql">CREATE TABLE
+DO
+INSERT 0 0</code></pre>
+          </div></div>
+          <p>狙い: 監査ログを使って競合や想定外の変更を後から検出する手法を紹介。</p>
+        </li>
+      </ol>
+
+      <h4>追加演習の定着確認</h4>
+      <ul>
+        <li><strong>楽観ロック:</strong> 更新件数チェックで競合検知→リトライするパターンを説明できる</li>
+        <li><strong>SERIALIZABLE:</strong> 衝突時にエラーが返るため、アプリでの再試行が必須であることを理解している</li>
+        <li><strong>バルクロック:</strong> 複数行ロック時はロック順序統一でデッドロックを回避する</li>
+      </ul>
     </section>
 
     <section class="fes-section" id="checks">
@@ -215,7 +497,12 @@ COMMIT;
     </section>
 
     <div style="margin-top: 28px; text-align: center;">
-      <a href="index.html" class="back-to-home">← トップに戻る</a>
+      <div style="display: inline-block; padding: 10px 14px; background: #222; color: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.25); font-weight: 700; font-size: 1rem;">
+        本コンテンツの作成時間： <span style="color: #ffd54f;">約13時間</span>
+      </div>
+      <div style="margin-top: 10px;">
+        <a href="index.html" class="back-to-home">← トップに戻る</a>
+      </div>
     </div>
 
     <script>
@@ -233,6 +520,52 @@ COMMIT;
           answer.classList.toggle('show');
         }
       }
+
+      function addCopyButtons() {
+        document.querySelectorAll('.code-block').forEach(function(cb) {
+          // avoid adding multiple buttons
+          if (cb.querySelector('.copy-btn')) return;
+          cb.style.position = cb.style.position || 'relative';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'copy-btn';
+          btn.setAttribute('aria-label', 'コードをコピー');
+          btn.textContent = 'コピー';
+          btn.addEventListener('click', function() {
+            var codeEl = cb.querySelector('pre code') || cb.querySelector('code') || cb.querySelector('pre');
+            if (!codeEl) return;
+            var text = codeEl.innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function() {
+                btn.textContent = 'コピー済み';
+                btn.classList.add('copied');
+                setTimeout(function() { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 1800);
+              }).catch(function() { fallbackCopy(text, btn); });
+            } else {
+              fallbackCopy(text, btn);
+            }
+          });
+          cb.appendChild(btn);
+        });
+      }
+
+      function fallbackCopy(text, btn){
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed'; ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.textContent = 'コピー済み';
+          btn.classList.add('copied');
+          setTimeout(function() { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 1800);
+        } catch (e) {
+          alert('コピーに失敗しました。手動で選択してコピーしてください。');
+        }
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
         const sections = document.querySelectorAll('.fes-section');
         sections.forEach(function(section) {
@@ -243,7 +576,38 @@ COMMIT;
             });
           }
         });
+        addCopyButtons();
+          addExerciseCodeToggles();
       });
+      
+        function addExerciseCodeToggles(){
+          document.querySelectorAll('#exercise .code-block').forEach(function(cb){
+            // avoid adding multiple toggles
+            if (cb.querySelector('.code-toggle-btn')) return;
+            var codeEl = cb.querySelector('pre');
+            if (!codeEl) return;
+            // hide the code initially
+            codeEl.classList.add('exercise-hidden');
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'code-toggle-btn';
+            btn.setAttribute('aria-label','コードを表示');
+            btn.textContent = 'コードを表示';
+            btn.addEventListener('click', function(){
+              if (codeEl.classList.contains('exercise-hidden')){
+                codeEl.classList.remove('exercise-hidden');
+                btn.textContent = 'コードを隠す';
+                btn.setAttribute('aria-label','コードを隠す');
+              } else {
+                codeEl.classList.add('exercise-hidden');
+                btn.textContent = 'コードを表示';
+                btn.setAttribute('aria-label','コードを表示');
+              }
+            });
+            cb.appendChild(btn);
+          });
+        }
     </script>
   </body>
 </html>
