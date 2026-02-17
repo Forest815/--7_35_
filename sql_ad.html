@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>同時実行制御 解説 - Kazushi's portfolio</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  </head>
+  <body>
+    <div class="menu-icon" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <h1><a href="index.html" style="color: lemonchiffon; text-decoration: none;">Kazushi's portfolio</a></h1>
+
+    <nav class="navigation" id="navigation">
+      <ul>
+        <li><a href="index.html" onclick="toggleMenu()">Home</a></li>
+        <li><a href="profile.html" onclick="toggleMenu()">Profile</a></li>
+        <li><a href="skills.html" onclick="toggleMenu()">Skills</a></li>
+        <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
+        <li><a href="sql_ad.html" onclick="toggleMenu()">同時実行制御</a></li>
+      </ul>
+    </nav>
+
+    <h2>同時実行制御（Concurrency Control） — 90分ハンズオン</h2>
+
+    <section class="fes-section" id="intro">
+      <h3>導入：嵐の中の銀行口座（10分）</h3>
+      <p>シナリオ: AさんがBさんへ1000円振り込む処理と、別のセッションで口座残高を確認する処理が同時に走ったらどうなるかを考えます。</p>
+      <p>掴み: トランザクションやロックを使わないと、<strong>Lost Update（更新消失）</strong>や計算の矛盾が発生することを簡単なデモで示します。</p>
+    </section>
+
+    <section class="fes-section" id="prep">
+      <h3>実験準備：2つの世界を用意する（10分）</h3>
+      <p>ハンズオン手順：</p>
+      <ol>
+        <li>ターミナルまたはpgAdminを2つ開き、PostgreSQLに接続（セッションA / セッションB）。</li>
+        <li>各セッションで自分のPIDを確認して、どちらがA/Bかを識別する。</li>
+      </ol>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 簡単な口座テーブル準備（1回だけ実行）
+CREATE TABLE IF NOT EXISTS accounts (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  balance INT NOT NULL
+);
+
+TRUNCATE TABLE accounts;
+INSERT INTO accounts (name, balance) VALUES ('A', 5000), ('B', 3000);
+
+-- 自分のセッションPID確認（psqlの場合）
+SELECT pg_backend_pid();
+</code></pre>
+      </div>
+    </section>
+
+    <section class="fes-section" id="exp-a">
+      <h3>実験A：デフォルトの READ COMMITTED を知る（20分）</h3>
+      <p>流れ：</p>
+      <ol>
+        <li>セッションA: BEGIN; UPDATE accounts SET balance = balance - 1000 WHERE id = 1; （まだ COMMIT しない）</li>
+        <li>セッションB: SELECT balance FROM accounts WHERE id = 1; → 変更前の値が見える（デフォルトではコミット済みの値のみ参照）</li>
+        <li>セッションA: COMMIT;</li>
+        <li>セッションB: もう一度 SELECT → 変更後の値が見える</li>
+      </ol>
+      <div class="code-block">
+        <pre><code class="language-sql">-- セッションA
+BEGIN;
+UPDATE accounts SET balance = balance - 1000 WHERE id = 1;
+
+-- セッションB
+SELECT balance FROM accounts WHERE id = 1;
+
+-- セッションA続き
+COMMIT;
+
+-- セッションB再度
+SELECT balance FROM accounts WHERE id = 1;
+</code></pre>
+      </div>
+      <p>解説: PostgreSQL のデフォルト隔離レベルは <strong>READ COMMITTED</strong>。未コミットの変更は他セッションからは見えません。</p>
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. READ COMMITTED の特徴は何か?</div>
+      <div class="quiz-answer">各クエリ実行時にコミット済みの最新データを見る。トランザクション中の別セッションの未コミット変更は見えない。</div>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. Lost Update を防ぐ簡単な方法は?</div>
+      <div class="quiz-answer">トランザクションを使い、必要に応じて行ロック（SELECT ... FOR UPDATE）を取得して排他制御する。</div>
+      <span class="important"><strong>ポイント:</strong> トランザクションの開始/終了（BEGIN/COMMIT）は可視性と整合性を決める重要な境界です。</span>
+    </section>
+
+    <section class="fes-section" id="exp-b">
+      <h3>実験B：ファントムリードとノンリピータブルリード（25分）</h3>
+      <p>ミッション: 集計処理中にデータが増えるとどうなるかを観察し、隔離レベルを変えて結果がどう変わるか確認します。</p>
+      <ol>
+        <li>セッションA: BEGIN; SELECT SUM(balance) FROM accounts; （結果をメモ）</li>
+        <li>セッションB: INSERT INTO accounts (name, balance) VALUES ('C', 4000); COMMIT;</li>
+        <li>セッションA: 再度 SELECT SUM(balance) FROM accounts; → 結果が変わる（ノンリピータブルリード / ファントム）</li>
+      </ol>
+      <div class="code-block">
+        <pre><code class="language-sql">-- セッションA
+BEGIN;
+SELECT SUM(balance) AS total_before FROM accounts;
+
+-- セッションB
+INSERT INTO accounts (name, balance) VALUES ('C', 4000);
+COMMIT;
+
+-- セッションA 再度
+SELECT SUM(balance) AS total_after FROM accounts;
+
+-- 対策: セッションA を REPEATABLE READ で実行すると...
+-- セッションA
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+SELECT SUM(balance) FROM accounts; -- そのトランザクション内では追加行が見えない
+</code></pre>
+      </div>
+      <p>解説: <strong>READ COMMITTED</strong> では別セッションのコミットが見えるが、<strong>REPEATABLE READ</strong> や <strong>SERIALIZABLE</strong> を使うと同一トランザクション内で一貫したスナップショットが保証されます（SERIALIZABLE はさらに衝突時にエラーを出す）。</p>
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. ノンリピータブルリードとは何か?</div>
+      <div class="quiz-answer">同一トランザクション内で同じSELECTを2回実行したときに結果が変わる現象。READ COMMITTEDで発生しやすい。</div>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. ファントムリードとどこが違う?</div>
+      <div class="quiz-answer">ファントムリードは集計や範囲検索で行の出現/非出現が変わる現象（新しい行が見える）。ノンリピータブルは既存行の値の変化を指す場合が多い。</div>
+      <span class="important"><strong>ポイント:</strong> 一貫性が重要な集計処理では隔離レベルを上げるか、アプリでリトライ設計を行いましょう。</span>
+    </section>
+
+    <section class="fes-section" id="exp-c">
+      <h3>実験C：デッドロックをわざと起こす（15分）</h3>
+      <p>目的: デッドロック発生の仕組みを体験し、PostgreSQL の検知と解決（片方のトランザクションをロールバック）の動作を確認する。</p>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 準備: テーブルに2行用意
+TRUNCATE TABLE accounts;
+INSERT INTO accounts (name, balance) VALUES ('X', 100), ('Y', 200);
+
+-- セッションA
+BEGIN;
+UPDATE accounts SET balance = balance + 10 WHERE id = 1; -- ロック1
+
+-- セッションB
+BEGIN;
+UPDATE accounts SET balance = balance + 20 WHERE id = 2; -- ロック2
+
+-- セッションA が次に id=2 の更新を試みる
+UPDATE accounts SET balance = balance - 5 WHERE id = 2; -- ここで待ち発生
+
+-- セッションB が次に id=1 の更新を試みる
+UPDATE accounts SET balance = balance - 5 WHERE id = 1; -- デッドロック検知 → エラー
+</code></pre>
+      </div>
+      <p>演習: 発生したエラーメッセージ（デッドロック検知）を確認し、どのトランザクションがロールバックされたかを説明してください。</p>
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. デッドロック検知の結果、PostgreSQLはどう処理するか?</div>
+      <div class="quiz-answer">デッドロックを検出すると、どちらか一方のトランザクションを強制的にロールバックして待ちを解消する（エラーを返す）。</div>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. デッドロックを避ける実務的な方法は?</div>
+      <div class="quiz-answer">共通のロック順序を守る、ロック粒度を見直す、短時間でコミットするようにトランザクションを設計するなど。</div>
+      <span class="important"><strong>ポイント:</strong> トランザクション内でのロック順序を統一するとデッドロックの発生確率が下がります。</span>
+    </section>
+
+    <section class="fes-section" id="exercise">
+      <h3>演習課題：在庫管理システムの悲劇（10分）</h3>
+      <p>問題: 在庫残り1個の商品を、2人が同時に購入ボタンを押した。データがマイナスにならないようにするには、どの時点でどんなロックを取るべきか？</p>
+      <p>解答例のヒントとサンプルSQL:</p>
+      <div class="code-block">
+        <pre><code class="language-sql">-- 在庫テーブル例
+CREATE TABLE IF NOT EXISTS stock (
+  product_id INT PRIMARY KEY,
+  qty INT NOT NULL
+);
+
+-- 安全な購入処理のサンプル（トランザクション内で SELECT ... FOR UPDATE を使う）
+BEGIN;
+-- 1) 在庫行を排他ロックで読み取る
+SELECT qty FROM stock WHERE product_id = 1 FOR UPDATE;
+
+-- 2) 在庫があれば更新（減算）
+UPDATE stock SET qty = qty - 1 WHERE product_id = 1 AND qty > 0;
+
+-- 3) 成功なら COMMIT、失敗なら ROLLBACK
+COMMIT;
+</code></pre>
+      </div>
+      <p>説明: <code>SELECT ... FOR UPDATE</code> で該当行をロックしてから在庫チェックと更新を行うことで、同時更新によるオーバーセールを防ぎます。</p>
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. なぜ <code>SELECT ... FOR UPDATE</code> が有効なのか?</div>
+      <div class="quiz-answer">当該行を排他ロックすることで、他トランザクションが同じ行を更新できなくし、チェック→更新の間に競合が起きないようにするため。</div>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. FOR UPDATE ではどのようなケースに注意するべきか?</div>
+      <div class="quiz-answer">複数行をロックするとデッドロックやスループット低下の可能性があるため、必要最小限の行だけをロックする設計が重要。</div>
+      <span class="important"><strong>ポイント:</strong> ロックは整合性を守るが、同時実行性を下げるトレードオフがある。必要箇所だけ使いましょう。</span>
+    </section>
+
+    <section class="fes-section" id="checks">
+      <h3>学習チェックリスト</h3>
+      <ul>
+        <li>READ COMMITTED / REPEATABLE READ / SERIALIZABLE の違いを説明できる</li>
+        <li><code>SELECT ... FOR UPDATE</code> の用途と副作用を理解している</li>
+        <li>デッドロックの原因を特定し、回避策を設計できる</li>
+      </ul>
+      <h4>補足問題</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">補足Q: SERIALIZABLE を使うと性能が必ず低下するか?</div>
+      <div class="quiz-answer">必ずしも低下しないが、衝突時にトランザクションがエラーとなりリトライが必要になるため、アプリ設計側での対処が必要になる点に注意。</div>
+    </section>
+
+    <section class="fes-section" id="summary">
+      <h3>まとめと次のステップ</h3>
+      <ul>
+        <li>隔離レベルとロックは同時実行制御の基礎。</li>
+        <li>実際のアプリではトランザクション境界を慎重に設計し、必要に応じて <code>FOR UPDATE</code> や適切な隔離レベルを使う。</li>
+        <li>SERIALIZABLE は最も厳密だが、衝突時にエラーになるためアプリ側でリトライ設計が必要。</li>
+      </ul>
+    </section>
+
+    <div style="margin-top: 28px; text-align: center;">
+      <a href="index.html" class="back-to-home">← トップに戻る</a>
+    </div>
+
+    <script>
+      function toggleMenu() {
+        var navigation = document.getElementById("navigation");
+        if (navigation.style.display === "block") {
+          navigation.style.display = "none";
+        } else {
+          navigation.style.display = "block";
+        }
+      }
+      function toggleAnswer(element) {
+        var answer = element.nextElementSibling;
+        if (answer && answer.classList.contains('quiz-answer')) {
+          answer.classList.toggle('show');
+        }
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        const sections = document.querySelectorAll('.fes-section');
+        sections.forEach(function(section) {
+          const heading = section.querySelector('h3');
+          if (heading) {
+            heading.addEventListener('click', function() {
+              section.classList.toggle('collapsed');
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
