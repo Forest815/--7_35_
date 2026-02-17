@@ -24,6 +24,9 @@
       .copy-btn.copied{background:#2e7d32}
       .quiz-answer{display:none;white-space:pre-wrap}
       .quiz-answer.show{display:block}
+      .page-toc{margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px}
+      .page-toc a{display:block;padding:6px 0;color:inherit;text-decoration:none}
+      .page-toc a:hover{text-decoration:underline}
     </style>
   </head>
   <body>
@@ -43,11 +46,26 @@
         <li><a href="works.html" onclick="toggleMenu()">作品</a></li>
         <li><a href="sql.html" onclick="toggleMenu()">SQL解説</a></li>
         <li><a href="sql_ad.html" onclick="toggleMenu()">同時実行制御</a></li>
+        <li>
+          <div class="page-toc">
+            <strong>このページ</strong>
+            <a href="#what-is-concurrency" onclick="toggleMenu()">同時実行制御とは何か</a>
+            <a href="#intro" onclick="toggleMenu()">導入（銀行口座）</a>
+            <a href="#prep" onclick="toggleMenu()">実験準備</a>
+            <a href="#exp-a" onclick="toggleMenu()">実験A: READ COMMITTED</a>
+            <a href="#exp-b" onclick="toggleMenu()">実験B: ノンリピータブル/ファントム</a>
+            <a href="#exp-c" onclick="toggleMenu()">実験C: デッドロック</a>
+            <a href="#exercise" onclick="toggleMenu()">演習課題</a>
+            <a href="#checks" onclick="toggleMenu()">学習チェックリスト</a>
+            <a href="#summary" onclick="toggleMenu()">まとめ</a>
+          </div>
+        </li>
         <li><a href="procon.html" onclick="toggleMenu()">高専プロコン</a></li>
+        
       </ul>
     </nav>
 
-    <h2>同時実行制御（Concurrency Control） — 90分ハンズオン</h2>
+    <h2>同時実行制御</h2>
 
     <section class="fes-section" id="what-is-concurrency">
       <h3>同時実行制御とは何か</h3>
@@ -56,13 +74,13 @@
     </section>
 
     <section class="fes-section" id="intro">
-      <h3>導入：嵐の中の銀行口座（10分）</h3>
+      <h3>導入：嵐の中の銀行口座</h3>
       <p>シナリオ: AさんがBさんへ1000円振り込む処理と、別のセッションで口座残高を確認する処理が同時に走ったらどうなるかを考えます。</p>
       <p>掴み: トランザクションやロックを使わないと、<strong>Lost Update（更新消失）</strong>や計算の矛盾が発生することを簡単なデモで示します。</p>
     </section>
 
     <section class="fes-section" id="prep">
-      <h3>実験準備：2つの世界を用意する（10分）</h3>
+      <h3>実験準備：2つの世界を用意する</h3>
       <p>ハンズオン手順：</p>
       <ol>
         <li>ターミナルまたはpgAdminを2つ開き、PostgreSQLに接続（セッションA / セッションB）。</li>
@@ -97,7 +115,7 @@ SELECT pg_backend_pid();
     </section>
 
     <section class="fes-section" id="exp-a">
-      <h3>実験A：デフォルトの READ COMMITTED を知る（20分）</h3>
+      <h3>実験A：デフォルトの READ COMMITTED を知る</h3>
       <p>流れ：</p>
       <ol>
         <li>セッションA: BEGIN; UPDATE accounts SET balance = balance - 1000 WHERE id = 1; （まだ COMMIT しない）</li>
@@ -146,7 +164,7 @@ SELECT balance FROM accounts WHERE id = 1;
     </section>
 
     <section class="fes-section" id="exp-b">
-      <h3>実験B：ファントムリードとノンリピータブルリード（25分）</h3>
+      <h3>実験B：ファントムリードとノンリピータブルリード</h3>
       <p>ミッション: 集計処理中にデータが増えるとどうなるかを観察し、隔離レベルを変えて結果がどう変わるか確認します。</p>
       <ol>
         <li>セッションA: BEGIN; SELECT SUM(balance) FROM accounts; （結果をメモ）</li>
@@ -204,7 +222,7 @@ BEGIN
     </section>
 
     <section class="fes-section" id="exp-c">
-      <h3>実験C：デッドロックをわざと起こす（15分）</h3>
+      <h3>実験C：デッドロックをわざと起こす</h3>
       <p>目的: デッドロック発生の仕組みを体験し、PostgreSQL の検知と解決（片方のトランザクションをロールバック）の動作を確認する。</p>
       <div class="code-block">
         <pre><code class="language-sql">-- 準備: テーブルに2行用意
@@ -248,7 +266,7 @@ UPDATE accounts SET balance = balance - 5 WHERE id = 1; -- デッドロック検
     </section>
 
     <section class="fes-section" id="exercise">
-      <h3>演習課題：在庫管理システムの悲劇（10分）</h3>
+      <h3>演習課題：在庫管理システムの悲劇</h3>
       <p>問題: 在庫残り1個の商品を、2人が同時に購入ボタンを押した。データがマイナスにならないようにするには、どの時点でどんなロックを取るべきか？</p>
       <p>解答例のヒントとサンプルSQL:</p>
       <div class="code-block">
