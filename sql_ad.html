@@ -28,6 +28,7 @@
       .page-toc a{display:block;padding:6px 0;color:inherit;text-decoration:none}
       .page-toc a:hover{text-decoration:underline}
       .code-explain{margin:8px 0 18px;padding:10px;background:rgba(0,0,0,0.04);border-radius:6px;color:inherit;font-size:0.95rem}
+      .result-explain{margin:8px 0 18px;padding:10px;background:rgba(0,0,0,0.03);border-left:3px solid rgba(0,0,0,0.08);border-radius:4px;color:inherit;font-size:0.92rem}
     </style>
   </head>
   <body>
@@ -598,6 +599,7 @@ INSERT 0 0</code></pre>
         addCopyButtons();
           addExerciseCodeToggles();
           addCodeExplanations();
+          addResultExplanations();
       });
       
         function addExerciseCodeToggles(){
@@ -624,6 +626,7 @@ INSERT 0 0</code></pre>
                 btn.textContent = 'コードを表示';
                 btn.setAttribute('aria-label','コードを表示');
               }
+              
             });
             cb.appendChild(btn);
           });
@@ -655,6 +658,34 @@ INSERT 0 0</code></pre>
             div.textContent = text;
             // insert after the code-block
             cb.parentNode.insertBefore(div, cb.nextSibling);
+          });
+        }
+
+        function addResultExplanations(){
+          document.querySelectorAll('.quiz-answer .result-block').forEach(function(rb){
+            // avoid adding multiple explanations
+            if (rb.nextElementSibling && rb.nextElementSibling.classList && rb.nextElementSibling.classList.contains('result-explain')) return;
+            var section = rb.closest('section');
+            var heading = section ? section.querySelector('h3') : null;
+            var title = heading ? heading.textContent.trim() : '';
+            var text = '';
+            if (/準備|prep|準備/.test(title) || (section && section.id==='prep')){
+              text = '出力例はテーブル作成や挿入が成功したときにpsqlが返すメッセージです。CREATE/INSERT/TRUNCATE 等の行が表示されます。';
+            } else if (/READ COMMITTED|実験A|exp-a/.test(title) || (section && section.id==='exp-a')){
+              text = 'トランザクション操作とSELECTの出力例です。未コミット状態・コミット後の可視性の違いを確認できます。';
+            } else if (/ファントム|ノンリピータブル|exp-b/.test(title) || (section && section.id==='exp-b')){
+              text = '集計結果やINSERTの出力例です。別セッションのコミットで集計値がどのように変わるかを示しています。';
+            } else if (/デッドロック|exp-c/.test(title) || (section && section.id==='exp-c')){
+              text = 'デッドロック発生時や更新の出力例です。実際は待ちやエラーメッセージが出力され、どちらかのトランザクションがロールバックされます。';
+            } else if (/演習|在庫|exercise/.test(title) || (section && section.id==='exercise')){
+              text = '演習の実行結果例です。環境やテーブル状態により出力は変わるため、実際の実行結果と比較して理解を深めてください。';
+            } else {
+              text = 'これは期待される出力例です。環境によって微妙に表示が異なることがありますので、主要なメッセージ（CREATE/INSERT/UPDATE/SELECTの結果）を確認してください。';
+            }
+            var div = document.createElement('div');
+            div.className = 'result-explain';
+            div.textContent = text;
+            rb.parentNode.insertBefore(div, rb.nextSibling);
           });
         }
     </script>
