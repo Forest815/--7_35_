@@ -53,6 +53,7 @@
             <strong>このページ</strong>
             <a href="#what-is-concurrency" onclick="toggleMenu()">同時実行制御とは何か</a>
             <a href="#intro" onclick="toggleMenu()">導入（銀行口座）</a>
+            <a href="#theory" onclick="toggleMenu()">基礎理論（座学）</a>
             <a href="#prep" onclick="toggleMenu()">実験準備</a>
             <a href="#exp-a" onclick="toggleMenu()">実験A: READ COMMITTED</a>
             <a href="#exp-b" onclick="toggleMenu()">実験B: ノンリピータブル/ファントム</a>
@@ -79,6 +80,48 @@
       <h3>導入：嵐の中の銀行口座</h3>
       <p>シナリオ: AさんがBさんへ1000円振り込む処理と、別のセッションで口座残高を確認する処理が同時に走ったらどうなるかを考えます。</p>
       <p>掴み: トランザクションやロックを使わないと、<strong>Lost Update（更新消失）</strong>や計算の矛盾が発生することを簡単なデモで示します。</p>
+    </section>
+
+    <section class="fes-section" id="theory">
+      <h3>基礎理論（座学）</h3>
+      <p>ここでは実験とは別に、データベース同時実行制御の基本概念と実務上の注意点を学びます。まずはACIDとMVCC、ロックの種類、隔離レベルの意味を整理します。</p>
+
+      <h4>ACID とトランザクションの役割</h4>
+      <p>ACIDは原子性（Atomicity）、一貫性（Consistency）、独立性／隔離性（Isolation）、永続性（Durability）の頭文字です。アプリ設計では、何をトランザクションに含めるか（境界の設計）が最も重要で、短時間で終わる操作をトランザクションに含めることが推奨されます。</p>
+
+      <h4>MVCC（Multi-Version Concurrency Control）</h4>
+      <p>PostgreSQLはMVCCを採用しており、読み取りは既存のスナップショットを参照して行われます。これにより読み取りが書き込みをブロックしにくくなりますが、更新は新しいバージョンを書き込むため、VACUUM による古いバージョン掃除やストレージの増加に注意が必要です。</p>
+
+      <h4>ロックの種類と粒度</h4>
+      <p>ロックには行ロック、ページロック、テーブルロックなどがあり、粒度が細かいほど同時実行性は高いが管理コストが増えます。`SELECT ... FOR UPDATE` は行ロックを取得する一般的な方法で、特定行を保護します。範囲検索や集計ではファントムを防ぐためにより高い隔離レベルが必要な場合があります。</p>
+
+      <h4>隔離レベルの実務的使い分け</h4>
+      <p>・READ COMMITTED: デフォルト。大半のウェブアプリで十分で、読み取りは最新のコミット済みデータを返します。<br>
+      ・REPEATABLE READ: トランザクション内で一貫したスナップショットを提供し、ノンリピータブルや多くのファントムを防ぐ。OLTPの一部で有効。<br>
+      ・SERIALIZABLE: 直列化可能性を保証するが、衝突時はエラーになりアプリ側でリトライが必要。重要な会計処理などに限定して使うのが現実的。</p>
+
+      <h4>楽観ロック vs 悲観ロック</h4>
+      <p>悲観ロック（行ロックなど）は確実に衝突を防げる一方で待ちとデッドロックを引き起こす可能性があります。楽観ロックは更新時に衝突を検出してリトライする方式で、高スループット環境で有効です。どちらを採るかは競合頻度と性能要件に依存します。</p>
+
+      <h4>運用で見るポイント</h4>
+      <p>実運用では `pg_locks` や `pg_stat_activity` を監視して長時間の待ちやブロッキングを検出します。ログレベルを適切に設定してデッドロックや待ちの発生を追跡し、必要に応じてトランザクションの設計を見直します。</p>
+
+      <p>次に実験で挙動を確認し、座学で学んだ概念と結び付けて理解を深めてください。</p>
+      <h4>定着確認</h4>
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q1. ACID の各要素を短く説明してください。</div>
+      <div class="quiz-answer">Atomicity（原子性）: トランザクションは全て成功するか全て失敗するか。Consistency（一貫性）: トランザクション後はデータが一貫した状態にある。Isolation（隔離性）: 並行実行が互いに干渉しない。Durability（永続性）: コミット後の変更は永続化される。</div>
+
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q2. MVCC の主な利点は何ですか?</div>
+      <div class="quiz-answer">読み取り処理が書き込み処理をブロックしにくくなり、同時実行性が高まる。一方で古いバージョンの掃除（VACUUM）やストレージ増加に注意が必要。</div>
+
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q3. ロックの粒度と同時実行性の関係は?</div>
+      <div class="quiz-answer">粒度が細かい（行ロックなど）ほど同時実行性は高いが、管理コストやオーバーヘッドが増える。逆にテーブルロックは衝突が少ない処理では単純で安全だが同時実行性を下げる。</div>
+
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q4. 楽観ロックはどのような場面で有効か?</div>
+      <div class="quiz-answer">競合が稀で更新処理より読み取りが多いシステムに有効。更新時に衝突を検出してリトライする設計が前提。</div>
+
+      <div class="quiz-question" onclick="toggleAnswer(this)">Q5. 運用で監視すべき代表的な項目は?</div>
+      <div class="quiz-answer">`pg_locks` / `pg_stat_activity` による長時間待ちやブロッキング検出、デッドロックのログ、トランザクションの滞留やVACUUMの遅延などを監視します。</div>
     </section>
 
     <section class="fes-section" id="prep">
